@@ -2,32 +2,25 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Full Body Tracker Pro</title>
+<title>Full Body Tracker Manual</title>
 <style>
 body { background-color: #111; color: #f4e3b2; font-family: sans-serif; padding: 20px; }
 h1 { color: #e1c699; }
 button { margin: 5px; padding: 5px 10px; background-color: #443c28; color: #f4e3b2; border: none; border-radius: 4px; cursor: pointer; }
 button:hover { background-color: #665c42; }
 .exercise { margin-bottom: 10px; padding: 15px; border: 1px solid #665c42; border-radius: 8px; background-color: #1a1610; display: flex; justify-content: space-between; align-items: center; }
-.progress-bar { background: #444; width: 100%; height: 25px; border-radius: 5px; overflow: hidden; margin-bottom: 20px; }
-.progress-fill { background: #b5a05b; width: 0%; height: 100%; text-align: center; color: #000; font-weight: bold; transition: width 0.3s; }
-#historyList { max-height: 200px; overflow-y: auto; border: 1px solid #665c42; padding: 5px; border-radius: 5px; background-color: #1a1610; }
-.timer-circle { width: 40px; height: 40px; border-radius: 50%; border: 3px solid #b5a05b; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-left: 10px; }
-.timer-active { animation: pulse 1s infinite; }
-@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+.timer-circle { width: 50px; height: 50px; border-radius: 50%; border: 3px solid #b5a05b; display: flex; align-items: center; justify-content: center; font-size: 14px; margin-left: 10px; }
 .feedback { margin-top: 10px; font-weight: bold; color: #88b04b; }
 </style>
 </head>
 <body>
-<h1>Full Body Tracker Pro</h1>
+<h1>Full Body Tracker Manual</h1>
 
 <div>
   <button onclick="changeDay('Lundi')">Lundi</button>
   <button onclick="changeDay('Mercredi')">Mercredi</button>
   <button onclick="changeDay('Vendredi')">Vendredi</button>
 </div>
-
-<div class="progress-bar"><div id="progressFill" class="progress-fill">0%</div></div>
 
 <div id="exerciseList"></div>
 <div class="feedback" id="feedback"></div>
@@ -51,7 +44,6 @@ let weeklyHistory = JSON.parse(localStorage.getItem('weeklyHistory')) || [];
 
 const exerciseList = document.getElementById('exerciseList');
 const historyList = document.getElementById('historyList');
-const progressFill = document.getElementById('progressFill');
 const feedback = document.getElementById('feedback');
 
 function getRandomExercise(type) {
@@ -61,10 +53,10 @@ function getRandomExercise(type) {
 
 function generateSession() {
   return [
-    { name: getRandomExercise('Push'), sets: 3, reps: 12, rest: 30 },
-    { name: getRandomExercise('Pull'), sets: 3, reps: 10, rest: 30 },
-    { name: getRandomExercise('Legs'), sets: 3, reps: 15, rest: 30 },
-    { name: getRandomExercise('Core'), sets: 2, reps: 20, rest: 20 }
+    { name: getRandomExercise('Push'), sets: 3, reps: 12, rest: 80 },
+    { name: getRandomExercise('Pull'), sets: 3, reps: 10, rest: 80 },
+    { name: getRandomExercise('Legs'), sets: 3, reps: 15, rest: 80 },
+    { name: getRandomExercise('Core'), sets: 2, reps: 20, rest: 80 }
   ];
 }
 
@@ -73,45 +65,26 @@ function renderExercises() {
   exercises.forEach((ex, index) => {
     const div = document.createElement('div');
     div.className = 'exercise';
+    
     const nameDiv = document.createElement('div');
     const doneSets = index < currentExIndex ? ex.sets : (index === currentExIndex ? currentSet : 0);
     nameDiv.textContent = `${ex.name} - ${doneSets}/${ex.sets} sets (${ex.reps} reps)`;
-
+    
     const timerDiv = document.createElement('div');
     timerDiv.className = 'timer-circle';
     timerDiv.id = 'timer' + index;
     timerDiv.textContent = '⏱';
-
+    
+    const button = document.createElement('button');
+    button.textContent = 'Terminé';
+    button.onclick = () => markSetDone();
+    
     div.appendChild(nameDiv);
     div.appendChild(timerDiv);
+    div.appendChild(button);
     exerciseList.appendChild(div);
   });
-  updateProgress();
-}
-
-function startSession() {
-  if(currentExIndex >= exercises.length){
-    feedback.textContent = "Séance terminée ! Bravo 💪";
-    return;
-  }
-  const ex = exercises[currentExIndex];
-  feedback.textContent = `Prochain : ${ex.name} (${currentSet+1}/${ex.sets})`;
-
-  const timerDiv = document.getElementById('timer' + currentExIndex);
-  timerDiv.classList.add('timer-active');
-  let timeLeft = ex.rest;
-  timerDiv.textContent = timeLeft;
-
-  const interval = setInterval(() => {
-    timeLeft -= 1;
-    timerDiv.textContent = timeLeft;
-    if(timeLeft <= 0){
-      clearInterval(interval);
-      timerDiv.classList.remove('timer-active');
-      timerDiv.textContent = '✔';
-      markSetDone();
-    }
-  }, 1000);
+  updateFeedback();
 }
 
 function markSetDone() {
@@ -123,10 +96,26 @@ function markSetDone() {
   if(currentSet >= ex.sets){
     currentExIndex += 1;
     currentSet = 0;
+  } else {
+    startRestTimer(ex.rest);
   }
   renderExercises();
   renderHistory();
-  startSession();
+}
+
+function startRestTimer(seconds){
+  let timeLeft = seconds;
+  const timerDiv = document.getElementById('timer' + currentExIndex);
+  timerDiv.textContent = timeLeft;
+  const interval = setInterval(()=>{
+    timeLeft -= 1;
+    timerDiv.textContent = timeLeft;
+    if(timeLeft <= 0){
+      clearInterval(interval);
+      timerDiv.textContent = '✔';
+      updateFeedback();
+    }
+  }, 1000);
 }
 
 function renderHistory() {
@@ -144,25 +133,20 @@ function changeDay(day) {
   currentExIndex = 0;
   currentSet = 0;
   renderExercises();
-  startSession();
 }
 
-function updateProgress() {
-  const totalSets = exercises.reduce((sum, ex) => sum + ex.sets, 0);
-  const doneSets = currentExIndex > 0 ? exercises.slice(0,currentExIndex).reduce((sum, ex) => sum + ex.sets, 0) + currentSet : currentSet;
-  const percent = totalSets === 0 ? 0 : Math.round((doneSets / totalSets) * 100);
-  progressFill.style.width = percent + '%';
-  progressFill.textContent = percent + '%';
-  if(percent < 50) progressFill.style.background = '#b5a05b';
-  else if(percent < 80) progressFill.style.background = '#e1c699';
-  else progressFill.style.background = '#88b04b';
+function updateFeedback() {
+  if(currentExIndex >= exercises.length){
+    feedback.textContent = "Séance terminée ! Bravo 💪";
+  } else {
+    feedback.textContent = `Prochain set : ${exercises[currentExIndex].name} (${currentSet+1}/${exercises[currentExIndex].sets}) - Repos ${exercises[currentExIndex].rest}s`;
+  }
 }
 
-// initialisation
+// Initialisation
 exercises = generateSession();
 renderExercises();
 renderHistory();
-startSession();
 </script>
 </body>
 </html>
