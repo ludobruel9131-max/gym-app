@@ -19,10 +19,10 @@
     }
 
     .container {
-      max-width: 800px;
+      max-width: 900px;
       margin: 2rem auto;
       display: flex;
-      flex-direction: column;
+      flex-wrap: wrap;
       gap: 1.5rem;
     }
 
@@ -30,13 +30,25 @@
       background-color: #2c2c2c;
       padding: 1rem;
       border-radius: 10px;
+      width: 250px;
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
       align-items: center;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
 
+    .card img {
+      width: 100%;
+      border-radius: 10px;
+      margin-bottom: 0.5rem;
+    }
+
     .card h3 {
+      margin: 0.5rem 0 0.2rem 0;
+      text-align: center;
+    }
+
+    .card p {
       margin: 0;
     }
 
@@ -48,7 +60,7 @@
       cursor: pointer;
       color: #1e1e1e;
       font-weight: bold;
-      margin-left: 0.5rem;
+      margin: 0.3rem;
     }
 
     button.done {
@@ -58,44 +70,58 @@
 
     @media (max-width: 600px) {
       .card {
-        flex-direction: column;
-        align-items: flex-start;
+        width: 100%;
       }
+    }
 
-      button {
-        margin-top: 0.5rem;
-        margin-left: 0;
-      }
+    select {
+      margin: 1rem auto;
+      display: block;
+      padding: 0.5rem;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: none;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Ma Séance Full Body</h1>
+    <h1>Ma Séance</h1>
   </header>
-  <div class="container" id="exercisesContainer">
-    <!-- Les cartes d'exercices apparaîtront ici -->
-  </div>
+
+  <select id="categorySelect" onchange="changeCategory(this.value)">
+    <option value="Full Body">Full Body</option>
+    <option value="Push">Push</option>
+    <option value="Pull">Pull</option>
+    <option value="Jambes">Jambes</option>
+  </select>
+
+  <div class="container" id="exercisesContainer"></div>
 
   <script>
-    const exercises = [
-      { name: "Pompes", sets: 3, reps: 12 },
-      { name: "Squats", sets: 3, reps: 15 },
-      { name: "Gainage", sets: 3, reps: "45 sec" },
-      { name: "Fentes", sets: 3, reps: 12 },
-      { name: "Rowing avec haltères", sets: 3, reps: 12 }
-    ];
+    const allExercises = {
+      "Full Body": [
+        { name: "Burpees", sets: 3, reps: 10, img: "https://i.imgur.com/8zF3aGv.gif" },
+        { name: "Mountain Climbers", sets: 3, reps: 20, img: "https://i.imgur.com/5xFqWw7.gif" }
+      ],
+      "Push": [
+        { name: "Pompes", sets: 3, reps: 12, img: "https://i.imgur.com/5nL9fZs.gif" },
+        { name: "Dips", sets: 3, reps: 12, img: "https://i.imgur.com/WJ3TXkd.gif" }
+      ],
+      "Pull": [
+        { name: "Rowing avec haltères", sets: 3, reps: 12, img: "https://i.imgur.com/3L6NqZc.gif" },
+        { name: "Tractions", sets: 3, reps: 8, img: "https://i.imgur.com/1aPZxA2.gif" }
+      ],
+      "Jambes": [
+        { name: "Squats", sets: 3, reps: 15, img: "https://i.imgur.com/V3e7uQt.gif" },
+        { name: "Fentes", sets: 3, reps: 12, img: "https://i.imgur.com/RP9xTf1.gif" }
+      ]
+    };
+
+    let currentCategory = "Full Body";
+    let exercises = [...allExercises[currentCategory]];
 
     const container = document.getElementById('exercisesContainer');
-
-    function getRandomExercise() {
-      const list = [
-        "Pompes", "Squats", "Fentes", "Dips", 
-        "Rowing avec haltères", "Planche latérale", 
-        "Crunchs", "Mountain Climbers", "Burpees"
-      ];
-      return list[Math.floor(Math.random() * list.length)];
-    }
 
     function renderExercises() {
       container.innerHTML = '';
@@ -103,10 +129,9 @@
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
-          <div>
-            <h3>${ex.name}</h3>
-            <p>${ex.sets} x ${ex.reps}</p>
-          </div>
+          <img src="${ex.img}" alt="${ex.name}">
+          <h3>${ex.name}</h3>
+          <p>${ex.sets} x ${ex.reps}</p>
           <div>
             <button onclick="replaceExercise(${index})">Remplacer</button>
             <button class="done" onclick="markDone(this)">Fait</button>
@@ -116,14 +141,25 @@
       });
     }
 
+    function getRandomExercise(category) {
+      const list = allExercises[category];
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
     function replaceExercise(index) {
-      exercises[index].name = getRandomExercise();
+      exercises[index] = getRandomExercise(currentCategory);
       renderExercises();
     }
 
     function markDone(button) {
       button.parentElement.parentElement.style.opacity = 0.6;
       button.disabled = true;
+    }
+
+    function changeCategory(category) {
+      currentCategory = category;
+      exercises = [...allExercises[currentCategory]];
+      renderExercises();
     }
 
     renderExercises();
