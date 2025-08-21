@@ -1,4 +1,3 @@
-<script>
 const exercisesPool = {
   'Push': ['Pompes', 'Développé couché', 'Dips'],
   'Legs': ['Squats', 'Fentes', 'Soulevé de terre jambes tendues'],
@@ -9,14 +8,12 @@ const exercisesPool = {
 let currentDay = 'Lundi';
 let exercises = [];
 let weeklyHistory = JSON.parse(localStorage.getItem('weeklyHistory')) || [];
-let weeklySessions = JSON.parse(localStorage.getItem('weeklySessions')) || {
-  'Lundi': false, 'Mardi': false, 'Mercredi': false, 'Jeudi': false, 'Vendredi': false, 'Samedi': false, 'Dimanche': false
-};
+let restTimer = null;
+let restTime = 80; // 1min20 en secondes
 
 const exerciseList = document.getElementById('exerciseList');
 const historyList = document.getElementById('historyList');
 const progressFill = document.getElementById('progressFill');
-const weeklyProgress = document.getElementById('weeklyProgress');
 
 function getRandomExercise(type) {
   const pool = exercisesPool[type];
@@ -25,50 +22,54 @@ function getRandomExercise(type) {
 
 function generateSession() {
   return [
-    { name: getRandomExercise('Push'), sets: 3, reps: 12, doneSets: 0, timer: 60 },
-    { name: getRandomExercise('Pull'), sets: 3, reps: 10, doneSets: 0, timer: 60 },
-    { name: getRandomExercise('Legs'), sets: 3, reps: 15, doneSets: 0, timer: 90 },
-    { name: getRandomExercise('Core'), sets: 2, reps: 20, doneSets: 0, timer: 45 }
+    { name: getRandomExercise('Push'), sets: 3, reps: 12, doneSets: 0 },
+    { name: getRandomExercise('Pull'), sets: 3, reps: 10, doneSets: 0 },
+    { name: getRandomExercise('Legs'), sets: 3, reps: 15, doneSets: 0 },
+    { name: getRandomExercise('Core'), sets: 2, reps: 20, doneSets: 0 }
   ];
 }
 
 function renderExercises() {
   exerciseList.innerHTML = '';
   exercises.forEach((ex, index) => {
-    const doneClass = ex.doneSets === ex.sets ? 'style="text-decoration: line-through; color: #777;"' : '';
     const div = document.createElement('div');
     div.className = 'exercise';
     div.innerHTML = `
-      <span ${doneClass}>${ex.name} - ${ex.doneSets}/${ex.sets} sets (${ex.reps} reps)</span>
-      <button onclick="markDone(${index})">+1 set</button>
-      <button onclick="startTimer(${index})">⏱ Timer</button>
-      <span id="timer${index}"></span>
+      ${ex.name} - ${ex.doneSets}/${ex.sets} sets (${ex.reps} reps)
+      <button onclick="startSet(${index})">+1 set</button>
+      <div id="rest${index}" style="margin-top:5px; color:#b5a05b;"></div>
     `;
     exerciseList.appendChild(div);
   });
   updateProgress();
-  updateWeeklyProgress();
 }
 
-function markDone(index) {
-  if (exercises[index].doneSets < exercises[index].sets) {
-    exercises[index].doneSets += 1;
-    weeklyHistory.push({day: currentDay, name: exercises[index].name, reps: exercises[index].reps});
-    localStorage.setItem('weeklyHistory', JSON.stringify(weeklyHistory));
-    checkCompleteSession();
-    renderExercises();
-    renderHistory();
-    showMotivation();
-  }
+function startSet(index) {
+  if (exercises[index].doneSets >= exercises[index].sets) return;
+
+  exercises[index].doneSets += 1;
+  weeklyHistory.push({day: currentDay, name: exercises[index].name, reps: exercises[index].reps});
+  localStorage.setItem('weeklyHistory', JSON.stringify(weeklyHistory));
+  renderExercises();
+  renderHistory();
+
+  startRest(index);
 }
 
-function checkCompleteSession() {
-  const allDone = exercises.every(ex => ex.doneSets === ex.sets);
-  if (allDone && !weeklySessions[currentDay]) {
-    weeklySessions[currentDay] = true;
-    localStorage.setItem('weeklySessions', JSON.stringify(weeklySessions));
-    alert(`🎉 Tu as terminé ta séance du ${currentDay} !`);
-  }
+function startRest(index) {
+  clearInterval(restTimer);
+  let remaining = restTime;
+  const restDiv = document.getElementById(`rest${index}`);
+  restDiv.textContent = `Repos : ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
+
+  restTimer = setInterval(() => {
+    remaining--;
+    restDiv.textContent = `Repos : ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
+    if (remaining <= 0) {
+      clearInterval(restTimer);
+      restDiv.textContent = 'Repos terminé ✅';
+    }
+  }, 1000);
 }
 
 function renderHistory() {
@@ -94,42 +95,7 @@ function updateProgress() {
   progressFill.textContent = percent + '%';
 }
 
-function updateWeeklyProgress() {
-  const totalDays = Object.keys(weeklySessions).length;
-  const doneDays = Object.values(weeklySessions).filter(done => done).length;
-  const percent = Math.round((doneDays / totalDays) * 100);
-  weeklyProgress.style.width = percent + '%';
-  weeklyProgress.textContent = percent + '% séances complètes';
-}
-
-function showMotivation() {
-  const messages = [
-    "Bien joué ! 💪",
-    "Continue comme ça ! 🔥",
-    "Tu progresses chaque jour ! 🌟",
-    "Encore un set de plus ! 👊"
-  ];
-  const msg = messages[Math.floor(Math.random() * messages.length)];
-  alert(msg);
-}
-
-function startTimer(index) {
-  let time = exercises[index].timer;
-  const timerSpan = document.getElementById('timer' + index);
-  timerSpan.textContent = ` ⏳ ${time}s`;
-  const interval = setInterval(() => {
-    time--;
-    timerSpan.textContent = ` ⏳ ${time}s`;
-    if (time <= 0) {
-      clearInterval(interval);
-      timerSpan.textContent = ' ✅ Terminé';
-      alert(`${exercises[index].name} terminé !`);
-    }
-  }, 1000);
-}
-
-// Initialisation
+// initialisation
 exercises = generateSession();
 renderExercises();
 renderHistory();
-</script>
