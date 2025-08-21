@@ -1,40 +1,86 @@
 // Liste des exercices
-const exercices = {
-    jambes: ["Squat", "Fentes", "Presse à cuisse", "Extension de jambes", "Fentes Bulgares", "Step-up", "Soulevé de terre jambes tendues", "Leg Curl", "Good Morning", "Hip Thrust", "Glute Bridge", "Élévation mollets"],
-    poitrine: ["Développé couché", "Pompes", "Développé incliné", "Écartés couchés", "Dips", "Pec Deck Machine"],
-    dos: ["Tractions", "Tirage vertical", "Tirage horizontal", "Rowing barre", "Rowing haltères", "Face Pull", "Hyperextensions", "Soulevé de terre"],
-    epaules: ["Développé militaire", "Push Press", "Développé Arnold", "Élévations frontales", "Élévations latérales", "Bent-over Lateral Raise", "Face Pull"],
-    bras: ["Curl haltères", "Curl barre", "Curl pupitre", "Curl concentré", "Curl marteau", "Extensions triceps poulie", "Barre au front", "Dips triceps", "Kickback"],
-    abdos: ["Crunch", "Relevé de jambes", "Sit-ups", "Gainage", "Russian Twist", "Side Plank", "Vacuums"],
-    fullbody: ["Burpees", "Soulevé de terre", "Squat", "Clean and Jerk", "Snatch", "Swing Kettlebell", "Tractions", "Pompes"]
-};
+const exercices = [
+  "Pompes",
+  "Squats",
+  "Fentes",
+  "Planche",
+  "Abdos crunch",
+  "Dips sur chaise",
+  "Mountain climbers"
+];
 
-// Fonction pour générer un exercice aléatoire par catégorie
+// Messages motivants
+const messages = [
+  "Bravo, tu gères ! 💪",
+  "Encore une séance, tu progresses ! 🚀",
+  "Tu es sur la bonne voie ! 🌟",
+  "Chaque effort compte ! 🔥"
+];
+
+const app = document.getElementById("app");
+
+// Choisir 5 exercices aléatoires
 function genererSeance() {
-    const seanceDiv = document.getElementById('seance');
-    seanceDiv.innerHTML = ''; // vide la séance précédente
-
-    for (let categorie in exercices) {
-        const list = exercices[categorie];
-        const randomExo = list[Math.floor(Math.random() * list.length)];
-
-        const exoDiv = document.createElement('div');
-        exoDiv.className = 'exercice';
-        exoDiv.textContent = `${categorie.toUpperCase()}: ${randomExo}`;
-
-        // bouton pour changer uniquement cet exercice
-        const changerBtn = document.createElement('button');
-        changerBtn.textContent = 'Changer';
-        changerBtn.onclick = () => {
-            const nouveauExo = list[Math.floor(Math.random() * list.length)];
-            exoDiv.textContent = `${categorie.toUpperCase()}: ${nouveauExo}`;
-            exoDiv.appendChild(changerBtn);
-        };
-
-        exoDiv.appendChild(changerBtn);
-        seanceDiv.appendChild(exoDiv);
-    }
+  const copie = [...exercices];
+  const seance = [];
+  for (let i = 0; i < 5; i++) {
+    const index = Math.floor(Math.random() * copie.length);
+    seance.push(copie.splice(index, 1)[0]);
+  }
+  return seance;
 }
 
-// bouton général
-document.getElementById('generer').addEventListener('click', genererSeance);
+// Afficher la séance
+function afficherSeance() {
+  app.innerHTML = ""; // Reset
+  const seance = genererSeance();
+
+  const titre = document.createElement("h2");
+  titre.textContent = "Séance du jour";
+  app.appendChild(titre);
+
+  const liste = document.createElement("ul");
+  seance.forEach(exo => {
+    const li = document.createElement("li");
+    li.textContent = exo;
+    li.style.cursor = "pointer";
+
+    // Timer
+    const timer = document.createElement("span");
+    timer.textContent = " ⏳ 30s";
+    timer.style.marginLeft = "10px";
+    li.appendChild(timer);
+
+    // Cliquer pour lancer le chrono
+    li.addEventListener("click", () => startTimer(timer, li));
+
+    liste.appendChild(li);
+  });
+  app.appendChild(liste);
+
+  // Message motivant
+  const msg = document.createElement("p");
+  msg.textContent = messages[Math.floor(Math.random() * messages.length)];
+  msg.style.fontWeight = "bold";
+  msg.style.marginTop = "15px";
+  app.appendChild(msg);
+}
+
+// Timer pour chaque exercice
+function startTimer(timerElement, liElement) {
+  let time = 30;
+  timerElement.textContent = ` ⏳ ${time}s`;
+  liElement.style.textDecoration = "none";
+  const interval = setInterval(() => {
+    time--;
+    timerElement.textContent = ` ⏳ ${time}s`;
+    if (time <= 0) {
+      clearInterval(interval);
+      liElement.style.textDecoration = "line-through"; // Marquer comme fait
+      timerElement.textContent = " ✅ Terminé !";
+    }
+  }, 1000);
+}
+
+// Initialisation
+afficherSeance();
