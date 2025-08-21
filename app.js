@@ -9,10 +9,14 @@ const exercisesPool = {
 let currentDay = 'Lundi';
 let exercises = [];
 let weeklyHistory = JSON.parse(localStorage.getItem('weeklyHistory')) || [];
+let weeklySessions = JSON.parse(localStorage.getItem('weeklySessions')) || {
+  'Lundi': false, 'Mardi': false, 'Mercredi': false, 'Jeudi': false, 'Vendredi': false, 'Samedi': false, 'Dimanche': false
+};
 
 const exerciseList = document.getElementById('exerciseList');
 const historyList = document.getElementById('historyList');
 const progressFill = document.getElementById('progressFill');
+const weeklyProgress = document.getElementById('weeklyProgress');
 
 function getRandomExercise(type) {
   const pool = exercisesPool[type];
@@ -20,7 +24,6 @@ function getRandomExercise(type) {
 }
 
 function generateSession() {
-  // 1 push, 1 pull, 1 legs, 1 core
   return [
     { name: getRandomExercise('Push'), sets: 3, reps: 12, doneSets: 0, timer: 60 },
     { name: getRandomExercise('Pull'), sets: 3, reps: 10, doneSets: 0, timer: 60 },
@@ -32,10 +35,9 @@ function generateSession() {
 function renderExercises() {
   exerciseList.innerHTML = '';
   exercises.forEach((ex, index) => {
+    const doneClass = ex.doneSets === ex.sets ? 'style="text-decoration: line-through; color: #777;"' : '';
     const div = document.createElement('div');
     div.className = 'exercise';
-    // Marquage visuel si fini
-    const doneClass = ex.doneSets === ex.sets ? 'style="text-decoration: line-through; color: #777;"' : '';
     div.innerHTML = `
       <span ${doneClass}>${ex.name} - ${ex.doneSets}/${ex.sets} sets (${ex.reps} reps)</span>
       <button onclick="markDone(${index})">+1 set</button>
@@ -45,6 +47,7 @@ function renderExercises() {
     exerciseList.appendChild(div);
   });
   updateProgress();
+  updateWeeklyProgress();
 }
 
 function markDone(index) {
@@ -52,9 +55,19 @@ function markDone(index) {
     exercises[index].doneSets += 1;
     weeklyHistory.push({day: currentDay, name: exercises[index].name, reps: exercises[index].reps});
     localStorage.setItem('weeklyHistory', JSON.stringify(weeklyHistory));
+    checkCompleteSession();
     renderExercises();
     renderHistory();
     showMotivation();
+  }
+}
+
+function checkCompleteSession() {
+  const allDone = exercises.every(ex => ex.doneSets === ex.sets);
+  if (allDone && !weeklySessions[currentDay]) {
+    weeklySessions[currentDay] = true;
+    localStorage.setItem('weeklySessions', JSON.stringify(weeklySessions));
+    alert(`🎉 Tu as terminé ta séance du ${currentDay} !`);
   }
 }
 
@@ -81,6 +94,14 @@ function updateProgress() {
   progressFill.textContent = percent + '%';
 }
 
+function updateWeeklyProgress() {
+  const totalDays = Object.keys(weeklySessions).length;
+  const doneDays = Object.values(weeklySessions).filter(done => done).length;
+  const percent = Math.round((doneDays / totalDays) * 100);
+  weeklyProgress.style.width = percent + '%';
+  weeklyProgress.textContent = percent + '% séances complètes';
+}
+
 function showMotivation() {
   const messages = [
     "Bien joué ! 💪",
@@ -92,7 +113,6 @@ function showMotivation() {
   alert(msg);
 }
 
-// Timer pour chaque exercice
 function startTimer(index) {
   let time = exercises[index].timer;
   const timerSpan = document.getElementById('timer' + index);
@@ -108,7 +128,7 @@ function startTimer(index) {
   }, 1000);
 }
 
-// initialisation
+// Initialisation
 exercises = generateSession();
 renderExercises();
 renderHistory();
