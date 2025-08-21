@@ -1,169 +1,99 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>Full Body Tracker</title>
-<style>
-body { background-color: #111; color: #f4e3b2; font-family: sans-serif; padding: 20px; }
-h1 { color: #e1c699; }
-button { margin: 5px; padding: 5px 10px; background-color: #443c28; color: #f4e3b2; border: none; border-radius: 4px; cursor: pointer; }
-button:hover { background-color: #665c42; }
-.exercise { position: relative; margin-bottom: 20px; padding: 10px; border: 1px solid #665c42; border-radius: 5px; background-color: #1a1610; display: flex; align-items: center; justify-content: space-between; }
-.exercise-name { flex: 1; }
-.progress-bar { background: #444; width: 100%; height: 20px; border-radius: 5px; overflow: hidden; margin-bottom: 20px; }
-.progress-fill { background: #b5a05b; width: 0%; height: 100%; text-align: center; color: #000; font-weight: bold; }
-
-#historyList { max-height: 200px; overflow-y: auto; border: 1px solid #665c42; padding: 5px; border-radius: 5px; background-color: #1a1610; }
-
-.circle-timer {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 3px solid #665c42;
-  position: relative;
-  margin-left: 10px;
-}
-.circle-fill {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  clip: rect(0px, 40px, 40px, 20px);
-  border-radius: 50%;
-}
-.circle-fill-inner {
-  width: 100%;
-  height: 100%;
-  border: 3px solid #b5a05b;
-  border-radius: 50%;
-  clip: rect(0px, 20px, 40px, 0px);
-  transform: rotate(0deg);
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entraînement</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .exercise {
+      margin-bottom: 20px;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background-color: #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background-color: #4caf50;
+      transition: width 1s linear;
+    }
+    #restTimerContainer {
+      margin-top: 30px;
+    }
+    button {
+      padding: 10px 15px;
+      margin-top: 5px;
+    }
+  </style>
 </head>
 <body>
-<h1>Full Body Tracker</h1>
 
-<div>
-  <button onclick="changeDay('Lundi')">Lundi</button>
-  <button onclick="changeDay('Mercredi')">Mercredi</button>
-  <button onclick="changeDay('Vendredi')">Vendredi</button>
-</div>
+  <h1>Programme d'entraînement</h1>
 
-<div class="progress-bar"><div id="progressFill" class="progress-fill">0%</div></div>
+  <div class="exercise">
+    <h2>Pompes</h2>
+    <button onclick="startSet('Pompes')">Lancer un set</button>
+  </div>
 
-<div id="exerciseList"></div>
+  <div class="exercise">
+    <h2>Squats</h2>
+    <button onclick="startSet('Squats')">Lancer un set</button>
+  </div>
 
-<h2>Historique</h2>
-<ul id="historyList"></ul>
+  <div class="exercise">
+    <h2>Abdos</h2>
+    <button onclick="startSet('Abdos')">Lancer un set</button>
+  </div>
 
-<script>
-const exercisesPool = {
-  'Push': ['Pompes', 'Développé couché', 'Dips'],
-  'Legs': ['Squats', 'Fentes', 'Soulevé de terre jambes tendues'],
-  'Core': ['Abdos', 'Gainage', 'Crunchs'],
-  'Pull': ['Tractions', 'Rowing', 'Curl biceps']
-};
+  <!-- Timer de repos -->
+  <div id="restTimerContainer" style="display:none;">
+    <h3>Repos : <span id="restTimer">80</span>s</h3>
+    <div class="progress-bar">
+      <div id="restProgress" class="progress-fill"></div>
+    </div>
+  </div>
 
-let currentDay = 'Lundi';
-let exercises = [];
-let weeklyHistory = JSON.parse(localStorage.getItem('weeklyHistory')) || [];
+  <script>
+    let restTime = 80;
+    let restInterval;
 
-const exerciseList = document.getElementById('exerciseList');
-const historyList = document.getElementById('historyList');
-const progressFill = document.getElementById('progressFill');
-
-function getRandomExercise(type) {
-  const pool = exercisesPool[type];
-  return pool[Math.floor(Math.random() * pool.length)];
-}
-
-function generateSession() {
-  return [
-    { name: getRandomExercise('Push'), sets: 3, reps: 12, doneSets: 0, rest: 80, timer: null, timerDeg: 0 },
-    { name: getRandomExercise('Pull'), sets: 3, reps: 10, doneSets: 0, rest: 80, timer: null, timerDeg: 0 },
-    { name: getRandomExercise('Legs'), sets: 3, reps: 15, doneSets: 0, rest: 80, timer: null, timerDeg: 0 },
-    { name: getRandomExercise('Core'), sets: 2, reps: 20, doneSets: 0, rest: 80, timer: null, timerDeg: 0 }
-  ];
-}
-
-function renderExercises() {
-  exerciseList.innerHTML = '';
-  exercises.forEach((ex, index) => {
-    const div = document.createElement('div');
-    div.className = 'exercise';
-
-    const nameDiv = document.createElement('div');
-    nameDiv.className = 'exercise-name';
-    nameDiv.innerHTML = `${ex.name} - ${ex.doneSets}/${ex.sets} sets (${ex.reps} reps)`;
-
-    const btn = document.createElement('button');
-    btn.textContent = '+1 set';
-    btn.onclick = () => startSet(index);
-
-    const circle = document.createElement('div');
-    circle.className = 'circle-timer';
-    circle.innerHTML = `<div class="circle-fill"><div class="circle-fill-inner" id="circle${index}"></div></div>`;
-
-    div.appendChild(nameDiv);
-    div.appendChild(btn);
-    div.appendChild(circle);
-    exerciseList.appendChild(div);
-  });
-  updateProgress();
-}
-
-function startSet(index) {
-  if (exercises[index].doneSets < exercises[index].sets) {
-    exercises[index].doneSets += 1;
-    weeklyHistory.push({day: currentDay, name: exercises[index].name, reps: exercises[index].reps});
-    localStorage.setItem('weeklyHistory', JSON.stringify(weeklyHistory));
-    renderExercises();
-    renderHistory();
-    startTimer(index);
-  }
-}
-
-function startTimer(index) {
-  const circleElem = document.getElementById(`circle${index}`);
-  if (!circleElem) return;
-  let deg = 0;
-  const interval = setInterval(() => {
-    deg += 360 / exercises[index].rest; // degree per second
-    circleElem.style.transform = `rotate(${deg}deg)`;
-    if (deg >= 360) {
-      clearInterval(interval);
-      circleElem.style.transform = `rotate(0deg)`;
+    function startSet(exerciseName) {
+      if(restInterval) clearInterval(restInterval); // Arrête tout timer précédent
+      alert("Commencez votre set de " + exerciseName);
+      startRest();
     }
-  }, 1000);
-}
 
-function renderHistory() {
-  historyList.innerHTML = '';
-  weeklyHistory.forEach(entry => {
-    const li = document.createElement('li');
-    li.textContent = `${entry.day} - ${entry.name} (${entry.reps} reps)`;
-    historyList.appendChild(li);
-  });
-}
+    function startRest() {
+      document.getElementById('restTimerContainer').style.display = 'block';
+      restTime = 80;
+      updateRestUI();
 
-function changeDay(day) {
-  currentDay = day;
-  exercises = generateSession();
-  renderExercises();
-}
+      restInterval = setInterval(() => {
+        restTime--;
+        updateRestUI();
+        if (restTime <= 0) {
+          clearInterval(restInterval);
+          document.getElementById('restTimerContainer').style.display = 'none';
+          alert("Repos terminé ! Passez à l'exercice suivant.");
+        }
+      }, 1000);
+    }
 
-function updateProgress() {
-  const totalSets = exercises.reduce((sum, ex) => sum + ex.sets, 0);
-  const doneSets = exercises.reduce((sum, ex) => sum + ex.doneSets, 0);
-  const percent = totalSets === 0 ? 0 : Math.round((doneSets / totalSets) * 100);
-  progressFill.style.width = percent + '%';
-  progressFill.textContent = percent + '%';
-}
+    function updateRestUI() {
+      document.getElementById('restTimer').textContent = restTime;
+      const percent = ((80 - restTime) / 80) * 100;
+      document.getElementById('restProgress').style.width = percent + '%';
+    }
+  </script>
 
-// initialisation
-exercises = generateSession();
-renderExercises();
-renderHistory();
-</script>
 </body>
 </html>
