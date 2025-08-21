@@ -2,169 +2,119 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Full Body Tracker Pro</title>
+<title>Routine d'Exercices</title>
 <style>
-body { background-color: #111; color: #f4e3b2; font-family: sans-serif; padding: 20px; }
-h1 { color: #e1c699; }
-button { margin: 5px; padding: 5px 10px; background-color: #443c28; color: #f4e3b2; border: none; border-radius: 4px; cursor: pointer; }
-button:hover { background-color: #665c42; }
-.exercise { margin-bottom: 10px; padding: 15px; border-radius: 8px; background-color: #1a1610; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-.progress-bar { height: 8px; border-radius: 4px; background-color: #555; width: 100%; margin-top: 5px; }
-.progress { height: 8px; border-radius: 4px; background-color: #88b04b; width: 0%; transition: width 0.3s; }
-.timer-circle { width: 50px; height: 50px; border-radius: 50%; border: 3px solid #b5a05b; display: flex; align-items: center; justify-content: center; font-size: 14px; margin-left: 10px; }
-.feedback { margin-top: 10px; font-weight: bold; color: #88b04b; }
-.exercise-name { font-weight: bold; }
+  body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
+  .exercise { padding: 10px; margin: 10px 0; background: #fff; border-radius: 8px; }
+  .timer { font-weight: bold; margin-left: 10px; }
+  .completed { background-color: #88b04b !important; }
+  button { margin-left: 10px; padding: 5px 10px; border-radius: 5px; border: none; cursor: pointer; }
+  button:disabled { background: #ccc; cursor: not-allowed; }
 </style>
 </head>
 <body>
-<h1>Full Body Tracker Pro</h1>
 
-<div>
-  <button onclick="changeDay('Lundi')">Lundi</button>
-  <button onclick="changeDay('Mercredi')">Mercredi</button>
-  <button onclick="changeDay('Vendredi')">Vendredi</button>
-</div>
+<h1>Routine d'Exercices</h1>
 
 <div id="exerciseList"></div>
-<div class="feedback" id="feedback"></div>
 
-<h2>Historique</h2>
-<ul id="historyList"></ul>
+<h2>Historique de la semaine</h2>
+<div id="history"></div>
 
-<audio id="dingSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3" preload="auto"></audio>
+<audio id="ding" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
 
 <script>
-const exercisesPool = {
-  'Push': ['Pompes', 'Développé couché', 'Dips'],
-  'Legs': ['Squats', 'Fentes', 'Soulevé de terre jambes tendues'],
-  'Core': ['Abdos', 'Gainage', 'Crunchs'],
-  'Pull': ['Tractions', 'Rowing', 'Curl biceps']
-};
+const exercises = [
+  { name: "Pompes", sets: 3, reps: 12, rest: 80 },
+  { name: "Squats", sets: 3, reps: 15, rest: 80 },
+  { name: "Abdos", sets: 2, reps: 20, rest: 80 }
+];
 
-let currentDay = 'Lundi';
-let exercises = [];
 let currentExIndex = 0;
 let currentSet = 0;
 let weeklyHistory = JSON.parse(localStorage.getItem('weeklyHistory')) || [];
 
-const exerciseList = document.getElementById('exerciseList');
-const historyList = document.getElementById('historyList');
-const feedback = document.getElementById('feedback');
-const dingSound = document.getElementById('dingSound');
-
-function getRandomExercise(type) {
-  const pool = exercisesPool[type];
-  return pool[Math.floor(Math.random() * pool.length)];
-}
-
-function generateSession() {
-  return [
-    { name: getRandomExercise('Push'), sets: 3, reps: 12, rest: 80 },
-    { name: getRandomExercise('Pull'), sets: 3, reps: 10, rest: 80 },
-    { name: getRandomExercise('Legs'), sets: 3, reps: 15, rest: 80 },
-    { name: getRandomExercise('Core'), sets: 2, reps: 20, rest: 80 }
-  ];
-}
+const dingSound = document.getElementById('ding');
 
 function renderExercises() {
-  exerciseList.innerHTML = '';
+  const container = document.getElementById('exerciseList');
+  container.innerHTML = '';
+
   exercises.forEach((ex, index) => {
     const div = document.createElement('div');
     div.className = 'exercise';
-    
-    const leftDiv = document.createElement('div');
-    const doneSets = index < currentExIndex ? ex.sets : (index === currentExIndex ? currentSet : 0);
-    leftDiv.innerHTML = `<span class="exercise-name">${ex.name}</span> - ${doneSets}/${ex.sets} sets (${ex.reps} reps)`;
-    
-    const progressContainer = document.createElement('div');
-    progressContainer.className = 'progress-bar';
-    const progress = document.createElement('div');
-    progress.className = 'progress';
-    progress.style.width = `${(doneSets / ex.sets) * 100}%`;
-    progressContainer.appendChild(progress);
-    leftDiv.appendChild(progressContainer);
-    
-    const timerDiv = document.createElement('div');
-    timerDiv.className = 'timer-circle';
-    timerDiv.id = 'timer' + index;
-    timerDiv.textContent = '⏱';
-    
-    const button = document.createElement('button');
-    button.textContent = 'Terminé';
-    button.onclick = () => markSetDone();
-    
-    div.appendChild(leftDiv);
-    div.appendChild(timerDiv);
-    div.appendChild(button);
-    exerciseList.appendChild(div);
+    div.id = 'ex' + index;
+
+    let setsDone = (index < currentExIndex) ? ex.sets : (index === currentExIndex ? currentSet : 0);
+    let setsDisplay = `Set ${setsDone + 1} / ${ex.sets}`;
+
+    div.innerHTML = `
+      <strong>${ex.name}</strong> - ${ex.reps} reps <span class="timer" id="timer${index}">${setsDone === ex.sets ? '✔' : ''}</span>
+      <button id="start${index}" ${index === currentExIndex ? '' : 'disabled'}>Démarrer Set</button>
+      <button id="done${index}" ${index === currentExIndex ? '' : 'disabled'}>Terminé</button>
+    `;
+
+    container.appendChild(div);
+
+    document.getElementById('start' + index).onclick = () => startSet(index);
+    document.getElementById('done' + index).onclick = () => markSetDone();
   });
-  updateFeedback();
+}
+
+function startSet(index) {
+  alert(`Commencez votre set de ${exercises[index].name} (${exercises[index].reps} reps)`);
 }
 
 function markSetDone() {
   if(currentExIndex >= exercises.length) return;
-  
+
+  const timerDiv = document.getElementById('timer' + currentExIndex);
+  if(timerDiv.dataset.resting === "true") return;
+
   const ex = exercises[currentExIndex];
-  weeklyHistory.push({day: currentDay, name: ex.name, reps: ex.reps});
+  weeklyHistory.push({ day: new Date().toLocaleDateString(), name: ex.name, reps: ex.reps });
   localStorage.setItem('weeklyHistory', JSON.stringify(weeklyHistory));
 
   currentSet += 1;
-  if(currentSet >= ex.sets){
+
+  if(currentSet < ex.sets){
+    startRestTimer(ex.rest);
+  } else {
     currentExIndex += 1;
     currentSet = 0;
-    updateFeedback();
-  } else {
-    startRestTimer(ex.rest);
   }
+
   renderExercises();
   renderHistory();
 }
 
 function startRestTimer(seconds){
-  let timeLeft = seconds;
   const timerDiv = document.getElementById('timer' + currentExIndex);
+  timerDiv.dataset.resting = "true";
   timerDiv.style.backgroundColor = '#f0a500';
+  let timeLeft = seconds;
   timerDiv.textContent = timeLeft;
-  const interval = setInterval(()=>{
+
+  const interval = setInterval(() => {
     timeLeft -= 1;
     timerDiv.textContent = timeLeft;
     if(timeLeft <= 0){
       clearInterval(interval);
       timerDiv.style.backgroundColor = '#88b04b';
       timerDiv.textContent = '✔';
+      timerDiv.dataset.resting = "false";
       dingSound.play();
-      updateFeedback();
+      renderExercises();
     }
   }, 1000);
 }
 
 function renderHistory() {
-  historyList.innerHTML = '';
-  weeklyHistory.forEach(entry => {
-    const li = document.createElement('li');
-    li.textContent = `${entry.day} - ${entry.name} (${entry.reps} reps)`;
-    historyList.appendChild(li);
-  });
+  const container = document.getElementById('history');
+  container.innerHTML = weeklyHistory.map(h => `${h.day}: ${h.name} - ${h.reps} reps`).join('<br>');
 }
 
-function changeDay(day) {
-  currentDay = day;
-  exercises = generateSession();
-  currentExIndex = 0;
-  currentSet = 0;
-  renderExercises();
-}
-
-function updateFeedback() {
-  if(currentExIndex >= exercises.length){
-    feedback.textContent = "Séance terminée ! Bravo 💪";
-  } else {
-    feedback.textContent = `Prochain set : ${exercises[currentExIndex].name} (${currentSet+1}/${exercises[currentExIndex].sets}) - Repos ${exercises[currentExIndex].rest}s`;
-  }
-}
-
-// Initialisation
-exercises = generateSession();
+// Initial render
 renderExercises();
 renderHistory();
 </script>
