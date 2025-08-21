@@ -267,3 +267,43 @@
         weeklyHistory.push({day: currentDay, name: ex.name});
         const li = document.createElement('li');
         li.textContent = `${currentDay} - ${ex.name} - Set ${ex.done
+      exercises[index] = { ...newEx, doneSets: 0 };
+      renderExercises();
+    }
+
+    function markDone(index) {
+      if(exercises[index].doneSets < exercises[index].sets){
+        exercises[index].doneSets += 1;
+        weeklyHistory.push({day: currentDay, name: exercises[index].name});
+        renderExercises();
+        renderHistory();
+      }
+    }
+
+    function renderHistory() {
+      historyList.innerHTML = '';
+      weeklyHistory.forEach(entry => {
+        const li = document.createElement('li');
+        li.textContent = `${entry.day} - ${entry.name}`;
+        historyList.appendChild(li);
+      });
+    }
+
+    function changeDay(day) {
+      currentDay = day;
+      exercises = generateSession(weekPlan[currentDay]);
+      renderExercises();
+    }
+
+    function updateProgress() {
+      const totalSets = exercises.reduce((sum, ex) => sum + ex.sets, 0);
+      const doneSets = exercises.reduce((sum, ex) => sum + ex.doneSets, 0);
+      const percent = totalSets === 0 ? 0 : Math.round((doneSets / totalSets) * 100);
+      progressFill.style.width = percent + '%';
+      progressFill.textContent = percent + '%';
+    }
+
+    renderExercises();
+  </script>
+</body>
+</html>
