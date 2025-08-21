@@ -31,22 +31,11 @@ button:hover { background-color: #665c42; }
 <ul id="historyList"></ul>
 
 <script>
-let weekPlan = {
-  'Lundi': [
-    { name: 'Pompes', sets: 3, reps: 12 },
-    { name: 'Squats', sets: 3, reps: 15 },
-    { name: 'Abdos', sets: 2, reps: 20 }
-  ],
-  'Mercredi': [
-    { name: 'Pompes', sets: 3, reps: 12 },
-    { name: 'Fentes', sets: 3, reps: 12 },
-    { name: 'Gainage', sets: 2, reps: 40 }
-  ],
-  'Vendredi': [
-    { name: 'Tractions', sets: 3, reps: 8 },
-    { name: 'Squats', sets: 3, reps: 15 },
-    { name: 'Abdos', sets: 2, reps: 20 }
-  ]
+const exercisesPool = {
+  'Push': ['Pompes', 'Développé couché', 'Dips'],
+  'Legs': ['Squats', 'Fentes', 'Soulevé de terre jambes tendues'],
+  'Core': ['Abdos', 'Gainage', 'Crunchs'],
+  'Pull': ['Tractions', 'Rowing', 'Curl biceps']
 };
 
 let currentDay = 'Lundi';
@@ -57,9 +46,19 @@ const exerciseList = document.getElementById('exerciseList');
 const historyList = document.getElementById('historyList');
 const progressFill = document.getElementById('progressFill');
 
-function generateSession(dayExercises) {
-  // copie des exercices et ajout d'un compteur
-  return dayExercises.map(ex => ({ ...ex, doneSets: 0 }));
+function getRandomExercise(type) {
+  const pool = exercisesPool[type];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function generateSession() {
+  // On choisit 1 push, 1 pull, 1 legs, 1 core
+  return [
+    { name: getRandomExercise('Push'), sets: 3, reps: 12, doneSets: 0 },
+    { name: getRandomExercise('Pull'), sets: 3, reps: 10, doneSets: 0 },
+    { name: getRandomExercise('Legs'), sets: 3, reps: 15, doneSets: 0 },
+    { name: getRandomExercise('Core'), sets: 2, reps: 20, doneSets: 0 }
+  ];
 }
 
 function renderExercises() {
@@ -94,7 +93,7 @@ function renderHistory() {
 
 function changeDay(day) {
   currentDay = day;
-  exercises = generateSession(weekPlan[currentDay]);
+  exercises = generateSession();
   renderExercises();
 }
 
@@ -107,7 +106,7 @@ function updateProgress() {
 }
 
 // initialisation
-exercises = generateSession(weekPlan[currentDay]);
+exercises = generateSession();
 renderExercises();
 renderHistory();
 </script>
