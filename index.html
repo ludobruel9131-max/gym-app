@@ -2,119 +2,166 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Routine d'Exercices</title>
+<title>Full Body Tracker</title>
 <style>
-  body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
-  .exercise { padding: 10px; margin: 10px 0; background: #fff; border-radius: 8px; }
-  .timer { font-weight: bold; margin-left: 10px; }
-  .completed { background-color: #88b04b !important; }
-  button { margin-left: 10px; padding: 5px 10px; border-radius: 5px; border: none; cursor: pointer; }
-  button:disabled { background: #ccc; cursor: not-allowed; }
+body { background-color: #111; color: #f4e3b2; font-family: sans-serif; padding: 20px; }
+h1 { color: #e1c699; }
+button { margin: 5px; padding: 5px 10px; background-color: #443c28; color: #f4e3b2; border: none; border-radius: 4px; cursor: pointer; }
+button:hover { background-color: #665c42; }
+.exercise { position: relative; margin-bottom: 20px; padding: 10px; border: 1px solid #665c42; border-radius: 5px; background-color: #1a1610; display: flex; align-items: center; justify-content: space-between; }
+.exercise-name { flex: 1; }
+.progress-bar { background: #444; width: 100%; height: 20px; border-radius: 5px; overflow: hidden; margin-bottom: 20px; }
+.progress-fill { background: #b5a05b; width: 0%; height: 100%; text-align: center; color: #000; font-weight: bold; }
+
+#historyList { max-height: 200px; overflow-y: auto; border: 1px solid #665c42; padding: 5px; border-radius: 5px; background-color: #1a1610; }
+
+.circle-timer {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid #665c42;
+  position: relative;
+  margin-left: 10px;
+}
+.circle-fill {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  clip: rect(0px, 40px, 40px, 20px);
+  border-radius: 50%;
+}
+.circle-fill-inner {
+  width: 100%;
+  height: 100%;
+  border: 3px solid #b5a05b;
+  border-radius: 50%;
+  clip: rect(0px, 20px, 40px, 0px);
+  transform: rotate(0deg);
+}
 </style>
 </head>
 <body>
+<h1>Full Body Tracker</h1>
 
-<h1>Routine d'Exercices</h1>
+<div>
+  <button onclick="changeDay('Lundi')">Lundi</button>
+  <button onclick="changeDay('Mercredi')">Mercredi</button>
+  <button onclick="changeDay('Vendredi')">Vendredi</button>
+</div>
+
+<div class="progress-bar"><div id="progressFill" class="progress-fill">0%</div></div>
 
 <div id="exerciseList"></div>
 
-<h2>Historique de la semaine</h2>
-<div id="history"></div>
-
-<audio id="ding" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
+<h2>Historique</h2>
+<ul id="historyList"></ul>
 
 <script>
-const exercises = [
-  { name: "Pompes", sets: 3, reps: 12, rest: 80 },
-  { name: "Squats", sets: 3, reps: 15, rest: 80 },
-  { name: "Abdos", sets: 2, reps: 20, rest: 80 }
-];
+const exercisesPool = {
+  'Push': ['Pompes', 'Développé couché', 'Dips'],
+  'Legs': ['Squats', 'Fentes', 'Soulevé de terre jambes tendues'],
+  'Core': ['Abdos', 'Gainage', 'Crunchs'],
+  'Pull': ['Tractions', 'Rowing', 'Curl biceps']
+};
 
-let currentExIndex = 0;
-let currentSet = 0;
+let currentDay = 'Lundi';
+let exercises = [];
 let weeklyHistory = JSON.parse(localStorage.getItem('weeklyHistory')) || [];
 
-const dingSound = document.getElementById('ding');
+const exerciseList = document.getElementById('exerciseList');
+const historyList = document.getElementById('historyList');
+const progressFill = document.getElementById('progressFill');
+
+function getRandomExercise(type) {
+  const pool = exercisesPool[type];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function generateSession() {
+  return [
+    { name: getRandomExercise('Push'), sets: 3, reps: 12, doneSets: 0, rest: 80, timer: null, timerDeg: 0 },
+    { name: getRandomExercise('Pull'), sets: 3, reps: 10, doneSets: 0, rest: 80, timer: null, timerDeg: 0 },
+    { name: getRandomExercise('Legs'), sets: 3, reps: 15, doneSets: 0, rest: 80, timer: null, timerDeg: 0 },
+    { name: getRandomExercise('Core'), sets: 2, reps: 20, doneSets: 0, rest: 80, timer: null, timerDeg: 0 }
+  ];
+}
 
 function renderExercises() {
-  const container = document.getElementById('exerciseList');
-  container.innerHTML = '';
-
+  exerciseList.innerHTML = '';
   exercises.forEach((ex, index) => {
     const div = document.createElement('div');
     div.className = 'exercise';
-    div.id = 'ex' + index;
 
-    let setsDone = (index < currentExIndex) ? ex.sets : (index === currentExIndex ? currentSet : 0);
-    let setsDisplay = `Set ${setsDone + 1} / ${ex.sets}`;
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'exercise-name';
+    nameDiv.innerHTML = `${ex.name} - ${ex.doneSets}/${ex.sets} sets (${ex.reps} reps)`;
 
-    div.innerHTML = `
-      <strong>${ex.name}</strong> - ${ex.reps} reps <span class="timer" id="timer${index}">${setsDone === ex.sets ? '✔' : ''}</span>
-      <button id="start${index}" ${index === currentExIndex ? '' : 'disabled'}>Démarrer Set</button>
-      <button id="done${index}" ${index === currentExIndex ? '' : 'disabled'}>Terminé</button>
-    `;
+    const btn = document.createElement('button');
+    btn.textContent = '+1 set';
+    btn.onclick = () => startSet(index);
 
-    container.appendChild(div);
+    const circle = document.createElement('div');
+    circle.className = 'circle-timer';
+    circle.innerHTML = `<div class="circle-fill"><div class="circle-fill-inner" id="circle${index}"></div></div>`;
 
-    document.getElementById('start' + index).onclick = () => startSet(index);
-    document.getElementById('done' + index).onclick = () => markSetDone();
+    div.appendChild(nameDiv);
+    div.appendChild(btn);
+    div.appendChild(circle);
+    exerciseList.appendChild(div);
   });
+  updateProgress();
 }
 
 function startSet(index) {
-  alert(`Commencez votre set de ${exercises[index].name} (${exercises[index].reps} reps)`);
-}
-
-function markSetDone() {
-  if(currentExIndex >= exercises.length) return;
-
-  const timerDiv = document.getElementById('timer' + currentExIndex);
-  if(timerDiv.dataset.resting === "true") return;
-
-  const ex = exercises[currentExIndex];
-  weeklyHistory.push({ day: new Date().toLocaleDateString(), name: ex.name, reps: ex.reps });
-  localStorage.setItem('weeklyHistory', JSON.stringify(weeklyHistory));
-
-  currentSet += 1;
-
-  if(currentSet < ex.sets){
-    startRestTimer(ex.rest);
-  } else {
-    currentExIndex += 1;
-    currentSet = 0;
+  if (exercises[index].doneSets < exercises[index].sets) {
+    exercises[index].doneSets += 1;
+    weeklyHistory.push({day: currentDay, name: exercises[index].name, reps: exercises[index].reps});
+    localStorage.setItem('weeklyHistory', JSON.stringify(weeklyHistory));
+    renderExercises();
+    renderHistory();
+    startTimer(index);
   }
-
-  renderExercises();
-  renderHistory();
 }
 
-function startRestTimer(seconds){
-  const timerDiv = document.getElementById('timer' + currentExIndex);
-  timerDiv.dataset.resting = "true";
-  timerDiv.style.backgroundColor = '#f0a500';
-  let timeLeft = seconds;
-  timerDiv.textContent = timeLeft;
-
+function startTimer(index) {
+  const circleElem = document.getElementById(`circle${index}`);
+  if (!circleElem) return;
+  let deg = 0;
   const interval = setInterval(() => {
-    timeLeft -= 1;
-    timerDiv.textContent = timeLeft;
-    if(timeLeft <= 0){
+    deg += 360 / exercises[index].rest; // degree per second
+    circleElem.style.transform = `rotate(${deg}deg)`;
+    if (deg >= 360) {
       clearInterval(interval);
-      timerDiv.style.backgroundColor = '#88b04b';
-      timerDiv.textContent = '✔';
-      timerDiv.dataset.resting = "false";
-      dingSound.play();
-      renderExercises();
+      circleElem.style.transform = `rotate(0deg)`;
     }
   }, 1000);
 }
 
 function renderHistory() {
-  const container = document.getElementById('history');
-  container.innerHTML = weeklyHistory.map(h => `${h.day}: ${h.name} - ${h.reps} reps`).join('<br>');
+  historyList.innerHTML = '';
+  weeklyHistory.forEach(entry => {
+    const li = document.createElement('li');
+    li.textContent = `${entry.day} - ${entry.name} (${entry.reps} reps)`;
+    historyList.appendChild(li);
+  });
 }
 
-// Initial render
+function changeDay(day) {
+  currentDay = day;
+  exercises = generateSession();
+  renderExercises();
+}
+
+function updateProgress() {
+  const totalSets = exercises.reduce((sum, ex) => sum + ex.sets, 0);
+  const doneSets = exercises.reduce((sum, ex) => sum + ex.doneSets, 0);
+  const percent = totalSets === 0 ? 0 : Math.round((doneSets / totalSets) * 100);
+  progressFill.style.width = percent + '%';
+  progressFill.textContent = percent + '%';
+}
+
+// initialisation
+exercises = generateSession();
 renderExercises();
 renderHistory();
 </script>
