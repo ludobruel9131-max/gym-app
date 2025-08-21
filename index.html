@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Full Body Tracker Amélioré</title>
+<title>Full Body Tracker Pro</title>
 <style>
 body { background-color: #111; color: #f4e3b2; font-family: sans-serif; padding: 20px; }
 h1 { color: #e1c699; }
@@ -14,15 +14,12 @@ button:hover { background-color: #665c42; }
 #historyList { max-height: 200px; overflow-y: auto; border: 1px solid #665c42; padding: 5px; border-radius: 5px; background-color: #1a1610; }
 .timer-circle { width: 40px; height: 40px; border-radius: 50%; border: 3px solid #b5a05b; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-left: 10px; }
 .timer-active { animation: pulse 1s infinite; }
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+.feedback { margin-top: 10px; font-weight: bold; color: #88b04b; }
 </style>
 </head>
 <body>
-<h1>Full Body Tracker Amélioré</h1>
+<h1>Full Body Tracker Pro</h1>
 
 <div>
   <button onclick="changeDay('Lundi')">Lundi</button>
@@ -33,6 +30,7 @@ button:hover { background-color: #665c42; }
 <div class="progress-bar"><div id="progressFill" class="progress-fill">0%</div></div>
 
 <div id="exerciseList"></div>
+<div class="feedback" id="feedback"></div>
 
 <h2>Historique</h2>
 <ul id="historyList"></ul>
@@ -47,11 +45,14 @@ const exercisesPool = {
 
 let currentDay = 'Lundi';
 let exercises = [];
+let currentExIndex = 0;
+let currentSet = 0;
 let weeklyHistory = JSON.parse(localStorage.getItem('weeklyHistory')) || [];
 
 const exerciseList = document.getElementById('exerciseList');
 const historyList = document.getElementById('historyList');
 const progressFill = document.getElementById('progressFill');
+const feedback = document.getElementById('feedback');
 
 function getRandomExercise(type) {
   const pool = exercisesPool[type];
@@ -60,10 +61,10 @@ function getRandomExercise(type) {
 
 function generateSession() {
   return [
-    { name: getRandomExercise('Push'), sets: 3, reps: 12, doneSets: 0, rest: 30 },
-    { name: getRandomExercise('Pull'), sets: 3, reps: 10, doneSets: 0, rest: 30 },
-    { name: getRandomExercise('Legs'), sets: 3, reps: 15, doneSets: 0, rest: 30 },
-    { name: getRandomExercise('Core'), sets: 2, reps: 20, doneSets: 0, rest: 20 }
+    { name: getRandomExercise('Push'), sets: 3, reps: 12, rest: 30 },
+    { name: getRandomExercise('Pull'), sets: 3, reps: 10, rest: 30 },
+    { name: getRandomExercise('Legs'), sets: 3, reps: 15, rest: 30 },
+    { name: getRandomExercise('Core'), sets: 2, reps: 20, rest: 20 }
   ];
 }
 
@@ -72,46 +73,35 @@ function renderExercises() {
   exercises.forEach((ex, index) => {
     const div = document.createElement('div');
     div.className = 'exercise';
-    
     const nameDiv = document.createElement('div');
-    nameDiv.textContent = `${ex.name} - ${ex.doneSets}/${ex.sets} sets (${ex.reps} reps)`;
-
-    const actionsDiv = document.createElement('div');
-    const btn = document.createElement('button');
-    btn.textContent = '+1 set';
-    btn.onclick = () => markDone(index);
-    actionsDiv.appendChild(btn);
+    const doneSets = index < currentExIndex ? ex.sets : (index === currentExIndex ? currentSet : 0);
+    nameDiv.textContent = `${ex.name} - ${doneSets}/${ex.sets} sets (${ex.reps} reps)`;
 
     const timerDiv = document.createElement('div');
     timerDiv.className = 'timer-circle';
     timerDiv.id = 'timer' + index;
-    timerDiv.textContent = ex.rest;
+    timerDiv.textContent = '⏱';
 
-    actionsDiv.appendChild(timerDiv);
     div.appendChild(nameDiv);
-    div.appendChild(actionsDiv);
-
+    div.appendChild(timerDiv);
     exerciseList.appendChild(div);
   });
   updateProgress();
 }
 
-function markDone(index) {
-  if (exercises[index].doneSets < exercises[index].sets) {
-    exercises[index].doneSets += 1;
-    weeklyHistory.push({day: currentDay, name: exercises[index].name, reps: exercises[index].reps});
-    localStorage.setItem('weeklyHistory', JSON.stringify(weeklyHistory));
-    renderExercises();
-    renderHistory();
-    startRestTimer(index, exercises[index].rest);
+function startSession() {
+  if(currentExIndex >= exercises.length){
+    feedback.textContent = "Séance terminée ! Bravo 💪";
+    return;
   }
-}
+  const ex = exercises[currentExIndex];
+  feedback.textContent = `Prochain : ${ex.name} (${currentSet+1}/${ex.sets})`;
 
-function startRestTimer(index, duration) {
-  const timerDiv = document.getElementById('timer' + index);
+  const timerDiv = document.getElementById('timer' + currentExIndex);
   timerDiv.classList.add('timer-active');
-  let timeLeft = duration;
+  let timeLeft = ex.rest;
   timerDiv.textContent = timeLeft;
+
   const interval = setInterval(() => {
     timeLeft -= 1;
     timerDiv.textContent = timeLeft;
@@ -119,8 +109,24 @@ function startRestTimer(index, duration) {
       clearInterval(interval);
       timerDiv.classList.remove('timer-active');
       timerDiv.textContent = '✔';
+      markSetDone();
     }
   }, 1000);
+}
+
+function markSetDone() {
+  const ex = exercises[currentExIndex];
+  weeklyHistory.push({day: currentDay, name: ex.name, reps: ex.reps});
+  localStorage.setItem('weeklyHistory', JSON.stringify(weeklyHistory));
+
+  currentSet += 1;
+  if(currentSet >= ex.sets){
+    currentExIndex += 1;
+    currentSet = 0;
+  }
+  renderExercises();
+  renderHistory();
+  startSession();
 }
 
 function renderHistory() {
@@ -135,16 +141,18 @@ function renderHistory() {
 function changeDay(day) {
   currentDay = day;
   exercises = generateSession();
+  currentExIndex = 0;
+  currentSet = 0;
   renderExercises();
+  startSession();
 }
 
 function updateProgress() {
   const totalSets = exercises.reduce((sum, ex) => sum + ex.sets, 0);
-  const doneSets = exercises.reduce((sum, ex) => sum + ex.doneSets, 0);
+  const doneSets = currentExIndex > 0 ? exercises.slice(0,currentExIndex).reduce((sum, ex) => sum + ex.sets, 0) + currentSet : currentSet;
   const percent = totalSets === 0 ? 0 : Math.round((doneSets / totalSets) * 100);
   progressFill.style.width = percent + '%';
   progressFill.textContent = percent + '%';
-  // couleur dynamique
   if(percent < 50) progressFill.style.background = '#b5a05b';
   else if(percent < 80) progressFill.style.background = '#e1c699';
   else progressFill.style.background = '#88b04b';
@@ -154,6 +162,7 @@ function updateProgress() {
 exercises = generateSession();
 renderExercises();
 renderHistory();
+startSession();
 </script>
 </body>
 </html>
