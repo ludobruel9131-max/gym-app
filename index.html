@@ -1,19 +1,54 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Push Pull Séances</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Push Pull Workout</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+<style>
+  body { background:#1e1e1e; color:#f4d35e; font-family:Arial; }
+  button { margin-left:10px; background:#f4d35e; color:#1e1e1e; border:none; padding:5px 10px; cursor:pointer; }
+  button:hover { opacity:0.8; }
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>Séance du jour - Push / Pull</h1>
-        <div id="seance">
-            <!-- Exercices générés par JS -->
-        </div>
-        <button id="generer">Générer séance</button>
+<div id="root"></div>
+
+<script type="text/babel">
+const exercises = {
+  legs: ["Squat","Fentes","Presse à cuisse","Extension de jambes"],
+  chest: ["Développé couché","Pompes","Développé incliné"],
+  back: ["Tractions","Tirage vertical","Rowing à la barre"]
+};
+const workoutTypes = { push:["chest","legs"], pull:["back","legs"] };
+
+function App() {
+  const [type,setType] = React.useState("push");
+  const [session,setSession] = React.useState({});
+
+  const generateSession = t => {
+    const newSession = {};
+    workoutTypes[t].forEach(cat => {
+      const list = exercises[cat];
+      newSession[cat] = list.sort(()=>0.5-Math.random()).slice(0,2);
+    });
+    setSession(newSession);
+  };
+
+  return (
+    <div>
+      <h1>Push/Pull Workout</h1>
+      <button onClick={()=>{setType("push"); generateSession("push");}}>Séance Push</button>
+      <button onClick={()=>{setType("pull"); generateSession("pull");}}>Séance Pull</button>
+      {Object.keys(session).map(cat=>(
+        <div key={cat}><h2>{cat}</h2>{session[cat].map((ex,i)=><div key={i}>{ex}</div>)}</div>
+      ))}
     </div>
-    <script src="app.js"></script>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
 </body>
 </html>
