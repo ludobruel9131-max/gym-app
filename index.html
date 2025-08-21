@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Ma Séance</title>
+  <title>Planificateur de Séances</title>
   <style>
     body {
       margin: 0;
@@ -97,19 +97,30 @@
       background-color: #2c2c2c;
       border-radius: 5px;
     }
+
+    #weekSelector {
+      text-align: center;
+      margin: 1rem 0;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>Ma Séance</h1>
+    <h1>Planificateur de Séances Hebdomadaire</h1>
   </header>
 
-  <select id="categorySelect" onchange="changeCategory(this.value)">
-    <option value="Full Body">Full Body</option>
-    <option value="Push">Push</option>
-    <option value="Pull">Pull</option>
-    <option value="Jambes">Jambes</option>
-  </select>
+  <div id="weekSelector">
+    <label for="daySelect">Jour: </label>
+    <select id="daySelect" onchange="changeDay(this.value)">
+      <option value="Lundi">Lundi</option>
+      <option value="Mardi">Mardi</option>
+      <option value="Mercredi">Mercredi</option>
+      <option value="Jeudi">Jeudi</option>
+      <option value="Vendredi">Vendredi</option>
+      <option value="Samedi">Samedi</option>
+      <option value="Dimanche">Dimanche</option>
+    </select>
+  </div>
 
   <div class="container" id="exercisesContainer"></div>
 
@@ -150,15 +161,26 @@
       ]
     };
 
-    let currentCategory = "Full Body";
-    let exercises = generateSession(currentCategory);
+    const weekPlan = {
+      "Lundi": "Full Body",
+      "Mardi": "Push",
+      "Mercredi": "Pull",
+      "Jeudi": "Jambes",
+      "Vendredi": "Full Body",
+      "Samedi": "Push",
+      "Dimanche": "Repos"
+    };
+
+    let currentDay = "Lundi";
+    let exercises = generateSession(weekPlan[currentDay]);
     const container = document.getElementById('exercisesContainer');
     const historyList = document.getElementById('historyList');
 
     function generateSession(category) {
+      if(category === "Repos") return [];
       const list = [...allExercises[category]];
       const session = [];
-      while(session.length < 4) { // 4 exercices par séance
+      while(session.length < 4) {
         const ex = list[Math.floor(Math.random() * list.length)];
         if(!session.find(e => e.name === ex.name)) session.push({...ex, doneSets: 0});
       }
@@ -167,6 +189,10 @@
 
     function renderExercises() {
       container.innerHTML = '';
+      if(exercises.length === 0){
+        container.innerHTML = '<p style="text-align:center;">Jour de repos !</p>';
+        return;
+      }
       exercises.forEach((ex, index) => {
         const card = document.createElement('div');
         card.className = 'card';
@@ -185,7 +211,7 @@
     }
 
     function replaceExercise(index) {
-      const list = allExercises[currentCategory];
+      const list = allExercises[weekPlan[currentDay]];
       let newEx;
       do {
         newEx = list[Math.floor(Math.random() * list.length)];
@@ -198,17 +224,16 @@
       const ex = exercises[index];
       if(ex.doneSets < ex.sets) {
         ex.doneSets++;
-        // Ajouter à l'historique
         const li = document.createElement('li');
-        li.textContent = `${ex.name} - Set ${ex.doneSets}/${ex.sets} à ${new Date().toLocaleTimeString()}`;
+        li.textContent = `${currentDay} - ${ex.name} - Set ${ex.doneSets}/${ex.sets} à ${new Date().toLocaleTimeString()}`;
         historyList.appendChild(li);
         renderExercises();
       }
     }
 
-    function changeCategory(category) {
-      currentCategory = category;
-      exercises = generateSession(currentCategory);
+    function changeDay(day) {
+      currentDay = day;
+      exercises = generateSession(weekPlan[currentDay]);
       renderExercises();
     }
 
