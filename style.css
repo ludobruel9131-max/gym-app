@@ -1,18 +1,34 @@
 body {
-    font-family: Arial, sans-serif;
-    padding: 20px;
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background-color: #f4f4f4;
 }
 
 h1 {
-    text-align: center;
+  text-align: center;
+}
+
+#workout {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 600px;
+  margin: 20px auto;
+  padding: 10px;
+  background-color: white;
+  border-radius: 8px;
 }
 
 .exercise {
-    border: 1px solid #ccc;
-    padding: 10px;
-    margin: 10px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
 button {
-    margin-top: 5px;
+  padding: 4px 8px;
+  cursor: pointer;
 }
