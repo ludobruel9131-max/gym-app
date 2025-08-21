@@ -102,6 +102,35 @@
       text-align: center;
       margin: 1rem 0;
     }
+
+    .progress-container {
+      max-width: 900px;
+      margin: 2rem auto;
+      background-color: #333;
+      padding: 1rem;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .progress-bar {
+      width: 100%;
+      background-color: #555;
+      border-radius: 10px;
+      overflow: hidden;
+      height: 25px;
+      margin-top: 0.5rem;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background-color: #32cd32;
+      text-align: center;
+      color: #fff;
+      line-height: 25px;
+      font-weight: bold;
+      transition: width 0.3s;
+    }
   </style>
 </head>
 <body>
@@ -123,6 +152,13 @@
   </div>
 
   <div class="container" id="exercisesContainer"></div>
+
+  <div class="progress-container">
+    <h2>Progression Hebdomadaire</h2>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill">0%</div>
+    </div>
+  </div>
 
   <div id="history">
     <h2>Historique des exercices faits</h2>
@@ -175,6 +211,8 @@
     let exercises = generateSession(weekPlan[currentDay]);
     const container = document.getElementById('exercisesContainer');
     const historyList = document.getElementById('historyList');
+    const progressFill = document.getElementById('progressFill');
+    let weeklyHistory = []; // Stocke tous les sets faits dans la semaine
 
     function generateSession(category) {
       if(category === "Repos") return [];
@@ -191,6 +229,7 @@
       container.innerHTML = '';
       if(exercises.length === 0){
         container.innerHTML = '<p style="text-align:center;">Jour de repos !</p>';
+        updateProgress();
         return;
       }
       exercises.forEach((ex, index) => {
@@ -208,6 +247,7 @@
         `;
         container.appendChild(card);
       });
+      updateProgress();
     }
 
     function replaceExercise(index) {
@@ -224,20 +264,6 @@
       const ex = exercises[index];
       if(ex.doneSets < ex.sets) {
         ex.doneSets++;
+        weeklyHistory.push({day: currentDay, name: ex.name});
         const li = document.createElement('li');
-        li.textContent = `${currentDay} - ${ex.name} - Set ${ex.doneSets}/${ex.sets} à ${new Date().toLocaleTimeString()}`;
-        historyList.appendChild(li);
-        renderExercises();
-      }
-    }
-
-    function changeDay(day) {
-      currentDay = day;
-      exercises = generateSession(weekPlan[currentDay]);
-      renderExercises();
-    }
-
-    renderExercises();
-  </script>
-</body>
-</html>
+        li.textContent = `${currentDay} - ${ex.name} - Set ${ex.done
