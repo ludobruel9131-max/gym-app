@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Ma Séance Full Body</title>
+  <title>Ma Séance</title>
   <style>
     body {
       margin: 0;
@@ -22,34 +22,31 @@
       max-width: 900px;
       margin: 2rem auto;
       display: flex;
-      flex-wrap: wrap;
-      gap: 1.5rem;
+      flex-direction: column;
+      gap: 1rem;
     }
 
     .card {
       background-color: #2c2c2c;
       padding: 1rem;
       border-radius: 10px;
-      width: 250px;
       display: flex;
-      flex-direction: column;
+      justify-content: space-between;
       align-items: center;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
 
-    .card img {
-      width: 100%;
-      border-radius: 10px;
-      margin-bottom: 0.5rem;
-    }
-
     .card h3 {
-      margin: 0.5rem 0 0.2rem 0;
-      text-align: center;
+      margin: 0;
     }
 
     .card p {
       margin: 0;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 0.5rem;
     }
 
     button {
@@ -60,18 +57,11 @@
       cursor: pointer;
       color: #1e1e1e;
       font-weight: bold;
-      margin: 0.3rem;
     }
 
     button.done {
       background-color: #32cd32;
       color: #fff;
-    }
-
-    @media (max-width: 600px) {
-      .card {
-        width: 100%;
-      }
     }
 
     select {
@@ -81,6 +71,31 @@
       font-size: 1rem;
       border-radius: 5px;
       border: none;
+    }
+
+    #history {
+      max-width: 900px;
+      margin: 2rem auto;
+      background-color: #333;
+      padding: 1rem;
+      border-radius: 10px;
+    }
+
+    #history h2 {
+      margin-top: 0;
+      color: #ffa500;
+    }
+
+    #history ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    #history li {
+      margin: 0.3rem 0;
+      padding: 0.3rem;
+      background-color: #2c2c2c;
+      border-radius: 5px;
     }
   </style>
 </head>
@@ -98,30 +113,35 @@
 
   <div class="container" id="exercisesContainer"></div>
 
+  <div id="history">
+    <h2>Historique des exercices faits</h2>
+    <ul id="historyList"></ul>
+  </div>
+
   <script>
     const allExercises = {
       "Full Body": [
-        { name: "Burpees", sets: 3, reps: 10, img: "https://i.imgur.com/8zF3aGv.gif" },
-        { name: "Mountain Climbers", sets: 3, reps: 20, img: "https://i.imgur.com/5xFqWw7.gif" }
+        { name: "Burpees", sets: 3, reps: 10 },
+        { name: "Mountain Climbers", sets: 3, reps: 20 }
       ],
       "Push": [
-        { name: "Pompes", sets: 3, reps: 12, img: "https://i.imgur.com/5nL9fZs.gif" },
-        { name: "Dips", sets: 3, reps: 12, img: "https://i.imgur.com/WJ3TXkd.gif" }
+        { name: "Pompes", sets: 3, reps: 12 },
+        { name: "Dips", sets: 3, reps: 12 }
       ],
       "Pull": [
-        { name: "Rowing avec haltères", sets: 3, reps: 12, img: "https://i.imgur.com/3L6NqZc.gif" },
-        { name: "Tractions", sets: 3, reps: 8, img: "https://i.imgur.com/1aPZxA2.gif" }
+        { name: "Rowing avec haltères", sets: 3, reps: 12 },
+        { name: "Tractions", sets: 3, reps: 8 }
       ],
       "Jambes": [
-        { name: "Squats", sets: 3, reps: 15, img: "https://i.imgur.com/V3e7uQt.gif" },
-        { name: "Fentes", sets: 3, reps: 12, img: "https://i.imgur.com/RP9xTf1.gif" }
+        { name: "Squats", sets: 3, reps: 15 },
+        { name: "Fentes", sets: 3, reps: 12 }
       ]
     };
 
     let currentCategory = "Full Body";
     let exercises = [...allExercises[currentCategory]];
-
     const container = document.getElementById('exercisesContainer');
+    const historyList = document.getElementById('historyList');
 
     function renderExercises() {
       container.innerHTML = '';
@@ -129,12 +149,13 @@
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
-          <img src="${ex.img}" alt="${ex.name}">
-          <h3>${ex.name}</h3>
-          <p>${ex.sets} x ${ex.reps}</p>
           <div>
+            <h3>${ex.name}</h3>
+            <p>${ex.sets} x ${ex.reps}</p>
+          </div>
+          <div class="buttons">
             <button onclick="replaceExercise(${index})">Remplacer</button>
-            <button class="done" onclick="markDone(this)">Fait</button>
+            <button class="done" onclick="markDone(${index})">Fait</button>
           </div>
         `;
         container.appendChild(card);
@@ -151,9 +172,15 @@
       renderExercises();
     }
 
-    function markDone(button) {
-      button.parentElement.parentElement.style.opacity = 0.6;
-      button.disabled = true;
+    function markDone(index) {
+      const ex = exercises[index];
+      // Ajouter à l'historique
+      const li = document.createElement('li');
+      li.textContent = `${ex.name} (${ex.sets}x${ex.reps}) - ${new Date().toLocaleTimeString()}`;
+      historyList.appendChild(li);
+
+      // Désactiver le bouton fait
+      renderExercises();
     }
 
     function changeCategory(category) {
