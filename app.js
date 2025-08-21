@@ -1,44 +1,40 @@
-// Liste des exercices par groupe musculaire
-const exercises = {
-  jambes: ["Squat", "Fentes", "Presse à cuisse", "Soulevé de terre jambes tendues", "Hip Thrust", "Élévation des mollets"],
-  poitrine: ["Développé couché", "Pompes", "Développé incliné", "Écartés couchés", "Dips", "Pec Deck Machine"],
-  dos: ["Tractions", "Tirage vertical", "Tirage horizontal", "Rowing à la barre", "Face Pull", "Hyperextensions"],
-  epaules: ["Développé Militaire", "Push Press", "Développé Arnold", "Élévations frontales", "Élévations latérales", "Élévations buste penché"],
-  bras: ["Curl haltères", "Curl barre", "Curl pupitre", "Curl concentré", "Extensions triceps poulie", "Dips triceps"],
-  abdos: ["Crunch", "Relevé de jambes", "Sit-ups", "Russian Twist", "Planche"]
+// Liste des exercices
+const exercices = {
+    jambes: ["Squat", "Fentes", "Presse à cuisse", "Extension de jambes", "Fentes Bulgares", "Step-up", "Soulevé de terre jambes tendues", "Leg Curl", "Good Morning", "Hip Thrust", "Glute Bridge", "Élévation mollets"],
+    poitrine: ["Développé couché", "Pompes", "Développé incliné", "Écartés couchés", "Dips", "Pec Deck Machine"],
+    dos: ["Tractions", "Tirage vertical", "Tirage horizontal", "Rowing barre", "Rowing haltères", "Face Pull", "Hyperextensions", "Soulevé de terre"],
+    epaules: ["Développé militaire", "Push Press", "Développé Arnold", "Élévations frontales", "Élévations latérales", "Bent-over Lateral Raise", "Face Pull"],
+    bras: ["Curl haltères", "Curl barre", "Curl pupitre", "Curl concentré", "Curl marteau", "Extensions triceps poulie", "Barre au front", "Dips triceps", "Kickback"],
+    abdos: ["Crunch", "Relevé de jambes", "Sit-ups", "Gainage", "Russian Twist", "Side Plank", "Vacuums"],
+    fullbody: ["Burpees", "Soulevé de terre", "Squat", "Clean and Jerk", "Snatch", "Swing Kettlebell", "Tractions", "Pompes"]
 };
 
-// Fonction pour générer un exercice aléatoire pour chaque groupe
-function generateWorkout() {
-  const workoutDiv = document.getElementById("workout");
-  workoutDiv.innerHTML = ""; // vide avant de remplir
+// Fonction pour générer un exercice aléatoire par catégorie
+function genererSeance() {
+    const seanceDiv = document.getElementById('seance');
+    seanceDiv.innerHTML = ''; // vide la séance précédente
 
-  for (let group in exercises) {
-    const exerciseList = exercises[group];
-    const randomIndex = Math.floor(Math.random() * exerciseList.length);
-    const selectedExercise = exerciseList[randomIndex];
+    for (let categorie in exercices) {
+        const list = exercices[categorie];
+        const randomExo = list[Math.floor(Math.random() * list.length)];
 
-    const exerciseDiv = document.createElement("div");
-    exerciseDiv.className = "exercise";
+        const exoDiv = document.createElement('div');
+        exoDiv.className = 'exercice';
+        exoDiv.textContent = `${categorie.toUpperCase()}: ${randomExo}`;
 
-    exerciseDiv.innerHTML = `
-      <span>${group.toUpperCase()}: ${selectedExercise}</span>
-      <button onclick="changeExercise('${group}', this)">Changer</button>
-    `;
+        // bouton pour changer uniquement cet exercice
+        const changerBtn = document.createElement('button');
+        changerBtn.textContent = 'Changer';
+        changerBtn.onclick = () => {
+            const nouveauExo = list[Math.floor(Math.random() * list.length)];
+            exoDiv.textContent = `${categorie.toUpperCase()}: ${nouveauExo}`;
+            exoDiv.appendChild(changerBtn);
+        };
 
-    workoutDiv.appendChild(exerciseDiv);
-  }
+        exoDiv.appendChild(changerBtn);
+        seanceDiv.appendChild(exoDiv);
+    }
 }
 
-// Fonction pour changer un exercice d’un groupe spécifique
-function changeExercise(group, button) {
-  const exerciseList = exercises[group];
-  const randomIndex = Math.floor(Math.random() * exerciseList.length);
-  const newExercise = exerciseList[randomIndex];
-
-  // Met à jour le texte du parent
-  button.parentElement.querySelector("span").textContent = `${group.toUpperCase()}: ${newExercise}`;
-}
-
-// Génère le workout au chargement de la page
-generateWorkout();
+// bouton général
+document.getElementById('generer').addEventListener('click', genererSeance);
