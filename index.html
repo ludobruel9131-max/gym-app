@@ -51,6 +51,13 @@
       margin-top: 3px;
       font-size: 12px;
     }
+
+    /* Timer */
+    .timer {
+      display: inline-block;
+      margin-left: 10px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -66,9 +73,9 @@
     const currentDay = new Date().toLocaleDateString('fr-FR', { weekday: 'long' });
 
     let exercises = [
-      { name: "Pompes", reps: 10, sets: 3, doneSets: 0 },
-      { name: "Squats", reps: 12, sets: 3, doneSets: 0 },
-      { name: "Abdos", reps: 15, sets: 3, doneSets: 0 }
+      { name: "Pompes", reps: 10, sets: 3, doneSets: 0, timer: null, time: 0 },
+      { name: "Squats", reps: 12, sets: 3, doneSets: 0, timer: null, time: 0 },
+      { name: "Abdos", reps: 15, sets: 3, doneSets: 0, timer: null, time: 0 }
     ];
 
     const weeklySessions = {
@@ -88,6 +95,25 @@
         exercises[index].doneSets++;
       }
       renderExercises();
+    }
+
+    function startTimer(index) {
+      if (exercises[index].timer) return; // timer déjà actif
+      exercises[index].timer = setInterval(() => {
+        exercises[index].time++;
+        renderExercises();
+      }, 1000);
+    }
+
+    function stopTimer(index) {
+      clearInterval(exercises[index].timer);
+      exercises[index].timer = null;
+    }
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
     }
 
     function renderWeeklyDashboard() {
@@ -140,6 +166,9 @@
         div.innerHTML = `
           <span ${doneClass}>${ex.name} - ${ex.doneSets}/${ex.sets} sets (${ex.reps} reps)</span>
           <button onclick="markDone(${index})">+1 set</button>
+          <button onclick="startTimer(${index})">▶️ Start</button>
+          <button onclick="stopTimer(${index})">⏹ Stop</button>
+          <span class="timer">${formatTime(ex.time)}</span>
         `;
         exerciseList.appendChild(div);
       });
