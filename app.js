@@ -1,37 +1,44 @@
-// Liste des exercices
+// Liste des exercices par groupe musculaire
 const exercises = {
-    jambes: ["Squat", "Fentes", "Presse à cuisse", "Leg Curl", "Hip Thrust", "Élévation des mollets"],
-    poitrine: ["Développé couché", "Pompes", "Développé incliné", "Écartés couchés", "Dips", "Pec Deck"],
-    dos: ["Tractions", "Tirage vertical", "Tirage horizontal", "Soulevé de terre", "Rowing à la barre", "Face Pull"],
-    epaules: ["Développé Militaire", "Push Press", "Développé Arnold", "Élévations frontales", "Élévations latérales", "Élévations buste penché"],
-    bras: ["Curl haltères", "Curl barre", "Curl pupitre", "Extensions triceps poulie", "Barre au front", "Kickback"],
-    abdos: ["Crunch", "Relevé de jambes", "Sit-ups", "Planche", "Russian Twist", "Side Plank"]
+  jambes: ["Squat", "Fentes", "Presse à cuisse", "Soulevé de terre jambes tendues", "Hip Thrust", "Élévation des mollets"],
+  poitrine: ["Développé couché", "Pompes", "Développé incliné", "Écartés couchés", "Dips", "Pec Deck Machine"],
+  dos: ["Tractions", "Tirage vertical", "Tirage horizontal", "Rowing à la barre", "Face Pull", "Hyperextensions"],
+  epaules: ["Développé Militaire", "Push Press", "Développé Arnold", "Élévations frontales", "Élévations latérales", "Élévations buste penché"],
+  bras: ["Curl haltères", "Curl barre", "Curl pupitre", "Curl concentré", "Extensions triceps poulie", "Dips triceps"],
+  abdos: ["Crunch", "Relevé de jambes", "Sit-ups", "Russian Twist", "Planche"]
 };
 
-// Fonction pour générer la séance
-function generateSeance() {
-    const seanceDiv = document.getElementById("seance");
-    seanceDiv.innerHTML = ""; // vide avant de générer
+// Fonction pour générer un exercice aléatoire pour chaque groupe
+function generateWorkout() {
+  const workoutDiv = document.getElementById("workout");
+  workoutDiv.innerHTML = ""; // vide avant de remplir
 
-    for (const [muscle, list] of Object.entries(exercises)) {
-        const exoDiv = document.createElement("div");
-        exoDiv.className = "exercise";
+  for (let group in exercises) {
+    const exerciseList = exercises[group];
+    const randomIndex = Math.floor(Math.random() * exerciseList.length);
+    const selectedExercise = exerciseList[randomIndex];
 
-        const exoName = document.createElement("span");
-        // Choisit un exercice aléatoire
-        exoName.textContent = `${muscle.toUpperCase()}: ${list[Math.floor(Math.random() * list.length)]}`;
-        exoDiv.appendChild(exoName);
+    const exerciseDiv = document.createElement("div");
+    exerciseDiv.className = "exercise";
 
-        const btn = document.createElement("button");
-        btn.textContent = "Changer cet exercice";
-        btn.addEventListener("click", () => {
-            exoName.textContent = `${muscle.toUpperCase()}: ${list[Math.floor(Math.random() * list.length)]}`;
-        });
-        exoDiv.appendChild(btn);
+    exerciseDiv.innerHTML = `
+      <span>${group.toUpperCase()}: ${selectedExercise}</span>
+      <button onclick="changeExercise('${group}', this)">Changer</button>
+    `;
 
-        seanceDiv.appendChild(exoDiv);
-    }
+    workoutDiv.appendChild(exerciseDiv);
+  }
 }
 
-// Génère la séance au chargement
-window.onload = generateSeance;
+// Fonction pour changer un exercice d’un groupe spécifique
+function changeExercise(group, button) {
+  const exerciseList = exercises[group];
+  const randomIndex = Math.floor(Math.random() * exerciseList.length);
+  const newExercise = exerciseList[randomIndex];
+
+  // Met à jour le texte du parent
+  button.parentElement.querySelector("span").textContent = `${group.toUpperCase()}: ${newExercise}`;
+}
+
+// Génère le workout au chargement de la page
+generateWorkout();
