@@ -58,6 +58,13 @@
       margin-left: 10px;
       font-weight: bold;
     }
+
+    /* Repos */
+    .rest {
+      color: blue;
+      font-weight: bold;
+      margin-left: 10px;
+    }
   </style>
 </head>
 <body>
@@ -72,10 +79,12 @@
   <script>
     const currentDay = new Date().toLocaleDateString('fr-FR', { weekday: 'long' });
 
+    const REST_DURATION = 60; // durée du repos en secondes
+
     let exercises = [
-      { name: "Pompes", reps: 10, sets: 3, doneSets: 0, timer: null, time: 0 },
-      { name: "Squats", reps: 12, sets: 3, doneSets: 0, timer: null, time: 0 },
-      { name: "Abdos", reps: 15, sets: 3, doneSets: 0, timer: null, time: 0 }
+      { name: "Pompes", reps: 10, sets: 3, doneSets: 0, timer: null, time: 0, restTimer: null, restTime: 0 },
+      { name: "Squats", reps: 12, sets: 3, doneSets: 0, timer: null, time: 0, restTimer: null, restTime: 0 },
+      { name: "Abdos", reps: 15, sets: 3, doneSets: 0, timer: null, time: 0, restTimer: null, restTime: 0 }
     ];
 
     const weeklySessions = {
@@ -93,12 +102,13 @@
     function markDone(index) {
       if (exercises[index].doneSets < exercises[index].sets) {
         exercises[index].doneSets++;
+        startRest(index);
       }
       renderExercises();
     }
 
     function startTimer(index) {
-      if (exercises[index].timer) return; // timer déjà actif
+      if (exercises[index].timer) return;
       exercises[index].timer = setInterval(() => {
         exercises[index].time++;
         renderExercises();
@@ -108,6 +118,21 @@
     function stopTimer(index) {
       clearInterval(exercises[index].timer);
       exercises[index].timer = null;
+    }
+
+    function startRest(index) {
+      if (exercises[index].restTimer) return;
+      exercises[index].restTime = 0;
+      exercises[index].restTimer = setInterval(() => {
+        exercises[index].restTime++;
+        renderExercises();
+        if (exercises[index].restTime >= REST_DURATION) {
+          clearInterval(exercises[index].restTimer);
+          exercises[index].restTimer = null;
+          exercises[index].restTime = 0;
+          alert(`Repos terminé pour ${exercises[index].name} !`);
+        }
+      }, 1000);
     }
 
     function formatTime(seconds) {
@@ -169,6 +194,7 @@
           <button onclick="startTimer(${index})">▶️ Start</button>
           <button onclick="stopTimer(${index})">⏹ Stop</button>
           <span class="timer">${formatTime(ex.time)}</span>
+          ${ex.restTimer ? `<span class="rest">Repos: ${formatTime(REST_DURATION - ex.restTime)}</span>` : ''}
         `;
         exerciseList.appendChild(div);
       });
