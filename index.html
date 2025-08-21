@@ -1,114 +1,152 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>Full Body Tracker</title>
-<style>
-body { background-color: #111; color: #f4e3b2; font-family: sans-serif; padding: 20px; }
-h1 { color: #e1c699; }
-button { margin: 5px; padding: 5px 10px; background-color: #443c28; color: #f4e3b2; border: none; border-radius: 4px; cursor: pointer; }
-button:hover { background-color: #665c42; }
-.exercise { margin-bottom: 10px; padding: 10px; border: 1px solid #665c42; border-radius: 5px; background-color: #1a1610; }
-.progress-bar { background: #444; width: 100%; height: 20px; border-radius: 5px; overflow: hidden; margin-bottom: 20px; }
-.progress-fill { background: #b5a05b; width: 0%; height: 100%; text-align: center; color: #000; font-weight: bold; }
-#historyList { max-height: 200px; overflow-y: auto; border: 1px solid #665c42; padding: 5px; border-radius: 5px; background-color: #1a1610; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suivi Musculation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    h2, h3 {
+      margin-bottom: 10px;
+    }
+
+    #exerciseList div {
+      margin-bottom: 8px;
+    }
+
+    button {
+      margin-left: 5px;
+      padding: 2px 5px;
+    }
+
+    /* Dashboard Hebdomadaire */
+    #weeklyBars {
+      display: flex;
+      gap: 5px;
+      margin-top: 10px;
+    }
+    .dayBar {
+      flex: 1;
+      height: 25px;
+      position: relative;
+      background-color: #eee;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .fillBar {
+      height: 100%;
+      width: 0%;
+      text-align: center;
+      color: white;
+      font-size: 12px;
+      line-height: 25px;
+      font-weight: bold;
+    }
+    .dayLabel {
+      text-align: center;
+      margin-top: 3px;
+      font-size: 12px;
+    }
+  </style>
 </head>
 <body>
-<h1>Full Body Tracker</h1>
+  <h2>Mes Exercices du Jour</h2>
+  <div id="exerciseList"></div>
 
-<div>
-  <button onclick="changeDay('Lundi')">Lundi</button>
-  <button onclick="changeDay('Mercredi')">Mercredi</button>
-  <button onclick="changeDay('Vendredi')">Vendredi</button>
-</div>
+  <h3>Suivi Hebdomadaire</h3>
+  <div id="weeklyDashboard">
+    <div id="weeklyBars"></div>
+  </div>
 
-<div class="progress-bar"><div id="progressFill" class="progress-fill">0%</div></div>
+  <script>
+    const currentDay = new Date().toLocaleDateString('fr-FR', { weekday: 'long' });
 
-<div id="exerciseList"></div>
+    let exercises = [
+      { name: "Pompes", reps: 10, sets: 3, doneSets: 0 },
+      { name: "Squats", reps: 12, sets: 3, doneSets: 0 },
+      { name: "Abdos", reps: 15, sets: 3, doneSets: 0 }
+    ];
 
-<h2>Historique</h2>
-<ul id="historyList"></ul>
+    const weeklySessions = {
+      "lundi": false,
+      "mardi": false,
+      "mercredi": false,
+      "jeudi": false,
+      "vendredi": false,
+      "samedi": false,
+      "dimanche": false
+    };
 
-<script>
-const exercisesPool = {
-  'Push': ['Pompes', 'Développé couché', 'Dips'],
-  'Legs': ['Squats', 'Fentes', 'Soulevé de terre jambes tendues'],
-  'Core': ['Abdos', 'Gainage', 'Crunchs'],
-  'Pull': ['Tractions', 'Rowing', 'Curl biceps']
-};
+    const exerciseList = document.getElementById('exerciseList');
 
-let currentDay = 'Lundi';
-let exercises = [];
-let weeklyHistory = JSON.parse(localStorage.getItem('weeklyHistory')) || [];
+    function markDone(index) {
+      if (exercises[index].doneSets < exercises[index].sets) {
+        exercises[index].doneSets++;
+      }
+      renderExercises();
+    }
 
-const exerciseList = document.getElementById('exerciseList');
-const historyList = document.getElementById('historyList');
-const progressFill = document.getElementById('progressFill');
+    function renderWeeklyDashboard() {
+      const container = document.getElementById('weeklyBars');
+      container.innerHTML = '';
 
-function getRandomExercise(type) {
-  const pool = exercisesPool[type];
-  return pool[Math.floor(Math.random() * pool.length)];
-}
+      Object.keys(weeklySessions).forEach(day => {
+        const barContainer = document.createElement('div');
+        barContainer.style.flex = '1';
 
-function generateSession() {
-  // On choisit 1 push, 1 pull, 1 legs, 1 core
-  return [
-    { name: getRandomExercise('Push'), sets: 3, reps: 12, doneSets: 0 },
-    { name: getRandomExercise('Pull'), sets: 3, reps: 10, doneSets: 0 },
-    { name: getRandomExercise('Legs'), sets: 3, reps: 15, doneSets: 0 },
-    { name: getRandomExercise('Core'), sets: 2, reps: 20, doneSets: 0 }
-  ];
-}
+        const dayBar = document.createElement('div');
+        dayBar.className = 'dayBar';
 
-function renderExercises() {
-  exerciseList.innerHTML = '';
-  exercises.forEach((ex, index) => {
-    const div = document.createElement('div');
-    div.className = 'exercise';
-    div.innerHTML = `${ex.name} - ${ex.doneSets}/${ex.sets} sets (${ex.reps} reps) <button onclick="markDone(${index})">+1 set</button>`;
-    exerciseList.appendChild(div);
-  });
-  updateProgress();
-}
+        const fillBar = document.createElement('div');
+        fillBar.className = 'fillBar';
 
-function markDone(index) {
-  if (exercises[index].doneSets < exercises[index].sets) {
-    exercises[index].doneSets += 1;
-    weeklyHistory.push({day: currentDay, name: exercises[index].name, reps: exercises[index].reps});
-    localStorage.setItem('weeklyHistory', JSON.stringify(weeklyHistory));
+        let percent = 0;
+        if (day === currentDay.toLowerCase() && exercises.length > 0) {
+          const totalSets = exercises.reduce((sum, ex) => sum + ex.sets, 0);
+          const doneSets = exercises.reduce((sum, ex) => sum + ex.doneSets, 0);
+          percent = totalSets === 0 ? 0 : Math.round((doneSets / totalSets) * 100);
+        } else {
+          percent = weeklySessions[day] ? 100 : 0;
+        }
+
+        fillBar.style.width = percent + '%';
+        if (percent === 100) fillBar.style.backgroundColor = '#4caf50';
+        else if (percent > 0) fillBar.style.backgroundColor = '#ff9800';
+        else fillBar.style.backgroundColor = '#f44336';
+
+        fillBar.textContent = percent + '%';
+
+        const label = document.createElement('div');
+        label.className = 'dayLabel';
+        label.textContent = day;
+
+        dayBar.appendChild(fillBar);
+        barContainer.appendChild(dayBar);
+        barContainer.appendChild(label);
+        container.appendChild(barContainer);
+      });
+    }
+
+    function renderExercises() {
+      exerciseList.innerHTML = '';
+      exercises.forEach((ex, index) => {
+        const doneClass = ex.doneSets === ex.sets ? 'style="text-decoration: line-through; color: #777;"' : '';
+        const div = document.createElement('div');
+        div.className = 'exercise';
+        div.innerHTML = `
+          <span ${doneClass}>${ex.name} - ${ex.doneSets}/${ex.sets} sets (${ex.reps} reps)</span>
+          <button onclick="markDone(${index})">+1 set</button>
+        `;
+        exerciseList.appendChild(div);
+      });
+      renderWeeklyDashboard();
+    }
+
     renderExercises();
-    renderHistory();
-  }
-}
-
-function renderHistory() {
-  historyList.innerHTML = '';
-  weeklyHistory.forEach(entry => {
-    const li = document.createElement('li');
-    li.textContent = `${entry.day} - ${entry.name} (${entry.reps} reps)`;
-    historyList.appendChild(li);
-  });
-}
-
-function changeDay(day) {
-  currentDay = day;
-  exercises = generateSession();
-  renderExercises();
-}
-
-function updateProgress() {
-  const totalSets = exercises.reduce((sum, ex) => sum + ex.sets, 0);
-  const doneSets = exercises.reduce((sum, ex) => sum + ex.doneSets, 0);
-  const percent = totalSets === 0 ? 0 : Math.round((doneSets / totalSets) * 100);
-  progressFill.style.width = percent + '%';
-  progressFill.textContent = percent + '%';
-}
-
-// initialisation
-exercises = generateSession();
-renderExercises();
-renderHistory();
-</script>
+  </script>
 </body>
 </html>
