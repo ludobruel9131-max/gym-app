@@ -41,7 +41,7 @@
     }
 
     .card p {
-      margin: 0;
+      margin: 0.3rem 0 0 0;
     }
 
     .buttons {
@@ -122,26 +122,48 @@
     const allExercises = {
       "Full Body": [
         { name: "Burpees", sets: 3, reps: 10 },
-        { name: "Mountain Climbers", sets: 3, reps: 20 }
+        { name: "Mountain Climbers", sets: 3, reps: 20 },
+        { name: "Jump Squats", sets: 3, reps: 12 },
+        { name: "Pompes", sets: 3, reps: 12 },
+        { name: "Planche", sets: 3, reps: 30 }
       ],
       "Push": [
         { name: "Pompes", sets: 3, reps: 12 },
-        { name: "Dips", sets: 3, reps: 12 }
+        { name: "Dips", sets: 3, reps: 12 },
+        { name: "Développé Couché", sets: 3, reps: 10 },
+        { name: "Élévations Latérales", sets: 3, reps: 15 },
+        { name: "Pompes Diamant", sets: 3, reps: 10 }
       ],
       "Pull": [
         { name: "Rowing avec haltères", sets: 3, reps: 12 },
-        { name: "Tractions", sets: 3, reps: 8 }
+        { name: "Tractions", sets: 3, reps: 8 },
+        { name: "Curl Biceps", sets: 3, reps: 12 },
+        { name: "Face Pulls", sets: 3, reps: 15 },
+        { name: "Pull-over", sets: 3, reps: 10 }
       ],
       "Jambes": [
         { name: "Squats", sets: 3, reps: 15 },
-        { name: "Fentes", sets: 3, reps: 12 }
+        { name: "Fentes", sets: 3, reps: 12 },
+        { name: "Soulevé de Terre", sets: 3, reps: 10 },
+        { name: "Mollets", sets: 3, reps: 20 },
+        { name: "Hip Thrust", sets: 3, reps: 12 }
       ]
     };
 
     let currentCategory = "Full Body";
-    let exercises = [...allExercises[currentCategory]];
+    let exercises = generateSession(currentCategory);
     const container = document.getElementById('exercisesContainer');
     const historyList = document.getElementById('historyList');
+
+    function generateSession(category) {
+      const list = [...allExercises[category]];
+      const session = [];
+      while(session.length < 4) { // 4 exercices par séance
+        const ex = list[Math.floor(Math.random() * list.length)];
+        if(!session.find(e => e.name === ex.name)) session.push({...ex, doneSets: 0});
+      }
+      return session;
+    }
 
     function renderExercises() {
       container.innerHTML = '';
@@ -151,41 +173,42 @@
         card.innerHTML = `
           <div>
             <h3>${ex.name}</h3>
-            <p>${ex.sets} x ${ex.reps}</p>
+            <p>${ex.sets} x ${ex.reps} | Faits: ${ex.doneSets}</p>
           </div>
           <div class="buttons">
             <button onclick="replaceExercise(${index})">Remplacer</button>
-            <button class="done" onclick="markDone(${index})">Fait</button>
+            <button class="done" onclick="markDone(${index})">Set Fait</button>
           </div>
         `;
         container.appendChild(card);
       });
     }
 
-    function getRandomExercise(category) {
-      const list = allExercises[category];
-      return list[Math.floor(Math.random() * list.length)];
-    }
-
     function replaceExercise(index) {
-      exercises[index] = getRandomExercise(currentCategory);
+      const list = allExercises[currentCategory];
+      let newEx;
+      do {
+        newEx = list[Math.floor(Math.random() * list.length)];
+      } while(exercises.find(e => e.name === newEx.name));
+      exercises[index] = {...newEx, doneSets: 0};
       renderExercises();
     }
 
     function markDone(index) {
       const ex = exercises[index];
-      // Ajouter à l'historique
-      const li = document.createElement('li');
-      li.textContent = `${ex.name} (${ex.sets}x${ex.reps}) - ${new Date().toLocaleTimeString()}`;
-      historyList.appendChild(li);
-
-      // Désactiver le bouton fait
-      renderExercises();
+      if(ex.doneSets < ex.sets) {
+        ex.doneSets++;
+        // Ajouter à l'historique
+        const li = document.createElement('li');
+        li.textContent = `${ex.name} - Set ${ex.doneSets}/${ex.sets} à ${new Date().toLocaleTimeString()}`;
+        historyList.appendChild(li);
+        renderExercises();
+      }
     }
 
     function changeCategory(category) {
       currentCategory = category;
-      exercises = [...allExercises[currentCategory]];
+      exercises = generateSession(currentCategory);
       renderExercises();
     }
 
