@@ -1,108 +1,115 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Full Body Tracker</title>
-  <style>
-    body { background-color: #111; color: #f4e3b2; font-family: sans-serif; padding: 20px; }
-    button { margin: 5px; }
-    .exercise { margin-bottom: 10px; }
-    .progress-bar { background: #444; width: 100%; height: 20px; border-radius: 5px; overflow: hidden; margin-bottom: 20px; }
-    .progress-fill { background: #0f0; width: 0%; height: 100%; text-align: center; color: #000; font-weight: bold; }
-  </style>
+<meta charset="UTF-8">
+<title>Full Body Tracker</title>
+<style>
+body { background-color: #111; color: #f4e3b2; font-family: sans-serif; padding: 20px; }
+h1 { color: #e1c699; }
+button { margin: 5px; padding: 5px 10px; background-color: #443c28; color: #f4e3b2; border: none; border-radius: 4px; cursor: pointer; }
+button:hover { background-color: #665c42; }
+.exercise { margin-bottom: 10px; padding: 10px; border: 1px solid #665c42; border-radius: 5px; background-color: #1a1610; }
+.progress-bar { background: #444; width: 100%; height: 20px; border-radius: 5px; overflow: hidden; margin-bottom: 20px; }
+.progress-fill { background: #b5a05b; width: 0%; height: 100%; text-align: center; color: #000; font-weight: bold; }
+#historyList { max-height: 200px; overflow-y: auto; border: 1px solid #665c42; padding: 5px; border-radius: 5px; background-color: #1a1610; }
+</style>
 </head>
 <body>
-  <h1>Plan Full Body</h1>
+<h1>Full Body Tracker</h1>
 
-  <div>
-    <button onclick="changeDay('Lundi')">Lundi</button>
-    <button onclick="changeDay('Mercredi')">Mercredi</button>
-    <button onclick="changeDay('Vendredi')">Vendredi</button>
-  </div>
+<div>
+  <button onclick="changeDay('Lundi')">Lundi</button>
+  <button onclick="changeDay('Mercredi')">Mercredi</button>
+  <button onclick="changeDay('Vendredi')">Vendredi</button>
+</div>
 
-  <div class="progress-bar"><div id="progressFill" class="progress-fill">0%</div></div>
+<div class="progress-bar"><div id="progressFill" class="progress-fill">0%</div></div>
 
-  <div id="exerciseList"></div>
+<div id="exerciseList"></div>
 
-  <h2>Historique</h2>
-  <ul id="historyList"></ul>
+<h2>Historique</h2>
+<ul id="historyList"></ul>
 
-  <script>
-    let weekPlan = {
-      'Lundi': [
-        { name: 'Pompes', sets: 3 },
-        { name: 'Squats', sets: 3 },
-        { name: 'Abdos', sets: 2 }
-      ],
-      'Mercredi': [
-        { name: 'Pompes', sets: 3 },
-        { name: 'Fentes', sets: 3 },
-        { name: 'Gainage', sets: 2 }
-      ],
-      'Vendredi': [
-        { name: 'Tractions', sets: 3 },
-        { name: 'Squats', sets: 3 },
-        { name: 'Abdos', sets: 2 }
-      ]
-    };
+<script>
+let weekPlan = {
+  'Lundi': [
+    { name: 'Pompes', sets: 3, reps: 12 },
+    { name: 'Squats', sets: 3, reps: 15 },
+    { name: 'Abdos', sets: 2, reps: 20 }
+  ],
+  'Mercredi': [
+    { name: 'Pompes', sets: 3, reps: 12 },
+    { name: 'Fentes', sets: 3, reps: 12 },
+    { name: 'Gainage', sets: 2, reps: 40 }
+  ],
+  'Vendredi': [
+    { name: 'Tractions', sets: 3, reps: 8 },
+    { name: 'Squats', sets: 3, reps: 15 },
+    { name: 'Abdos', sets: 2, reps: 20 }
+  ]
+};
 
-    let currentDay = 'Lundi';
-    let exercises = [];
-    let weeklyHistory = [];
+let currentDay = 'Lundi';
+let exercises = [];
+let weeklyHistory = JSON.parse(localStorage.getItem('weeklyHistory')) || [];
 
-    const exerciseList = document.getElementById('exerciseList');
-    const historyList = document.getElementById('historyList');
-    const progressFill = document.getElementById('progressFill');
+const exerciseList = document.getElementById('exerciseList');
+const historyList = document.getElementById('historyList');
+const progressFill = document.getElementById('progressFill');
 
-    function generateSession(dayExercises) {
-      return dayExercises.map(ex => ({ ...ex, doneSets: 0 }));
-    }
+function generateSession(dayExercises) {
+  // copie des exercices et ajout d'un compteur
+  return dayExercises.map(ex => ({ ...ex, doneSets: 0 }));
+}
 
-    function renderExercises() {
-      exerciseList.innerHTML = '';
-      exercises.forEach((ex, index) => {
-        const div = document.createElement('div');
-        div.className = 'exercise';
-        div.innerHTML = `${ex.name} - ${ex.doneSets}/${ex.sets} sets <button onclick="markDone(${index})">+1</button>`;
-        exerciseList.appendChild(div);
-      });
-      updateProgress();
-    }
+function renderExercises() {
+  exerciseList.innerHTML = '';
+  exercises.forEach((ex, index) => {
+    const div = document.createElement('div');
+    div.className = 'exercise';
+    div.innerHTML = `${ex.name} - ${ex.doneSets}/${ex.sets} sets (${ex.reps} reps) <button onclick="markDone(${index})">+1 set</button>`;
+    exerciseList.appendChild(div);
+  });
+  updateProgress();
+}
 
-    function markDone(index) {
-      if(exercises[index].doneSets < exercises[index].sets){
-        exercises[index].doneSets += 1;
-        weeklyHistory.push({day: currentDay, name: exercises[index].name});
-        renderExercises();
-        renderHistory();
-      }
-    }
-
-    function renderHistory() {
-      historyList.innerHTML = '';
-      weeklyHistory.forEach(entry => {
-        const li = document.createElement('li');
-        li.textContent = `${entry.day} - ${entry.name}`;
-        historyList.appendChild(li);
-      });
-    }
-
-    function changeDay(day) {
-      currentDay = day;
-      exercises = generateSession(weekPlan[currentDay]);
-      renderExercises();
-    }
-
-    function updateProgress() {
-      const totalSets = exercises.reduce((sum, ex) => sum + ex.sets, 0);
-      const doneSets = exercises.reduce((sum, ex) => sum + ex.doneSets, 0);
-      const percent = totalSets === 0 ? 0 : Math.round((doneSets / totalSets) * 100);
-      progressFill.style.width = percent + '%';
-      progressFill.textContent = percent + '%';
-    }
-
-    exercises = generateSession(weekPlan[currentDay]);
+function markDone(index) {
+  if (exercises[index].doneSets < exercises[index].sets) {
+    exercises[index].doneSets += 1;
+    weeklyHistory.push({day: currentDay, name: exercises[index].name, reps: exercises[index].reps});
+    localStorage.setItem('weeklyHistory', JSON.stringify(weeklyHistory));
     renderExercises();
-  </script>
+    renderHistory();
+  }
+}
+
+function renderHistory() {
+  historyList.innerHTML = '';
+  weeklyHistory.forEach(entry => {
+    const li = document.createElement('li');
+    li.textContent = `${entry.day} - ${entry.name} (${entry.reps} reps)`;
+    historyList.appendChild(li);
+  });
+}
+
+function changeDay(day) {
+  currentDay = day;
+  exercises = generateSession(weekPlan[currentDay]);
+  renderExercises();
+}
+
+function updateProgress() {
+  const totalSets = exercises.reduce((sum, ex) => sum + ex.sets, 0);
+  const doneSets = exercises.reduce((sum, ex) => sum + ex.doneSets, 0);
+  const percent = totalSets === 0 ? 0 : Math.round((doneSets / totalSets) * 100);
+  progressFill.style.width = percent + '%';
+  progressFill.textContent = percent + '%';
+}
+
+// initialisation
+exercises = generateSession(weekPlan[currentDay]);
+renderExercises();
+renderHistory();
+</script>
 </body>
 </html>
